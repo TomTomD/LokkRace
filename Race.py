@@ -3,6 +3,11 @@ import tkinter.font as font
 from operator import attrgetter
 import datetime
 import glob
+import os.path
+
+DATA_DIR = "./data"
+PARTICIPANTS_DIR = DATA_DIR + "/kanotister/"
+RACE_RESULT_DIR = DATA_DIR + "/reces/"
 
 class Application(tk.Frame):
     def __init__(self, master=None, race=None):
@@ -22,8 +27,9 @@ class Application(tk.Frame):
 
         self.available_racers_list = tk.Listbox(self, selectmode=tk.SINGLE)
         self.available_racers_list.pack(side="right", expand=1, fill=tk.Y)
-        for file in glob.glob("*.json"):
-            name = file.split('.')[0]
+        for file in glob.glob(PARTICIPANTS_DIR + "*.json"):
+            path, filename = os.path.split(file)
+            name = filename.split('.')[0]
             self.available_racers_list.insert(tk.END, name)
         #self.available_racers_list.bind("<Double-Button-1>", self.select_racer)
 
@@ -145,8 +151,9 @@ class AddParticipantDialog(tk.Toplevel):
 
         self.racers_list = tk.Listbox(self, selectmode=tk.SINGLE)
         self.racers_list.pack(side="right", expand=1, fill=tk.Y)
-        for file in glob.glob("*.json"):
-            name = file.split('.')[0]
+        for file in glob.glob(PARTICIPANTS_DIR + "*.json"):
+            path, filename = os.path.split(file)
+            name = filename.split('.')[0]
             self.racers_list.insert(tk.END, name)
         self.racers_list.bind("<Double-Button-1>", self.select_racer)
 
@@ -331,8 +338,9 @@ class ReportDialog(tk.Toplevel):
         # TODO: Write protect.
         self.report_text.pack(side="top", expand=1, fill=tk.Y)
 
-        for file in glob.glob("*.json"):
-            name = file.split('.')[0]
+        for file in glob.glob(PARTICIPANTS_DIR + "*.json"):
+            path, filename = os.path.split(file)
+            name = filename.split('.')[0]
             racer = Participant(name)
             racer.load()
             racer_report = racer.get_report()
@@ -370,15 +378,17 @@ class Participant:
         print(self.race_history)
                    
     def save(self):
+        if not os.path.isdir(PARTICIPANTS_DIR):
+            os.makedirs(PARTICIPANTS_DIR)
         dict_to_save = self.__dict__
         dict_to_save["race_history"] = self.race_history
-        file_name = self.name + ".json"
+        file_name = PARTICIPANTS_DIR + self.name + ".json"
         with open(file_name, "w") as write_file:
             json.dump(dict_to_save, write_file, indent = 4)
 
     def load(self):
         try:
-            file_name = self.name + ".json"
+            file_name = PARTICIPANTS_DIR + self.name + ".json"
             with open(file_name, "r") as read_file:
                 data = json.load(read_file)
                 self.best_time_seconds = data["best_time_seconds"]
@@ -548,8 +558,10 @@ class Race:
 
         
     def save(self):
+        if not os.path.isdir(RACE_RESULT_DIR):
+            os.makedirs(RACE_RESULT_DIR)
         race_string = self.start_time.strftime("%Y%m%d-%H%M%S")
-        file_name = race_string + ".txt"
+        file_name = RACE_RESULT_DIR + race_string + ".txt"
         with open(file_name, "w") as write_file:
             write_file.write(self.get_start_list())
 
