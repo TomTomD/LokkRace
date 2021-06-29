@@ -7,7 +7,7 @@ import os.path
 
 DATA_DIR = "./data"
 PARTICIPANTS_DIR = DATA_DIR + "/kanotister/"
-RACE_RESULT_DIR = DATA_DIR + "/reces/"
+RACE_RESULT_DIR = DATA_DIR + "/races/"
 
 class Application(tk.Frame):
     def __init__(self, master=None, race=None):
@@ -72,11 +72,6 @@ class Application(tk.Frame):
         self.start_race_button["text"] = "Start Race"
         self.start_race_button["command"] = self.start_race_pressed
         self.start_race_button.pack(side="bottom", pady=20)
-
-        self.manual_race_button = tk.Button(button_frame)
-        self.manual_race_button["text"] = "Manuellt resultat"
-        #self.manual_race_button["command"] =
-        self.manual_race_button.pack(side="bottom")
 
         self.repor_button = tk.Button(button_frame)
         self.repor_button["text"] = "Rapport"
@@ -235,6 +230,14 @@ class RunRaceDialog(tk.Toplevel):
         self.remove_time_button = tk.Button(goal_time_frame, text = "Ta bort\nTid")
         self.remove_time_button["command"] = self.remove_time_pressed
         self.remove_time_button.pack(side="right")
+
+        self.manual_time = tk.Entry(goal_time_frame)
+        self.manual_time.insert(0, "14:00")
+        self.manual_time.pack(side="top")
+
+        self.manual_time_button = tk.Button(goal_time_frame, text = "Manuell Tid")
+        self.manual_time_button["command"] = self.manual_time_pressed
+        self.manual_time_button.pack(side="top")
         
 
         
@@ -280,6 +283,14 @@ class RunRaceDialog(tk.Toplevel):
             self.racers_list.insert(tk.END, removed_racer)
         self.update_goal_list()
         self.update()
+
+    def manual_time_pressed(self):
+        manual_datetime = datetime.datetime.strptime(self.manual_time.get(), "%M:%S")
+        time_in_seconds = manual_datetime.minute * 60 + manual_datetime.second
+        self.race.add_finish_time(time_in_seconds)
+        self.update_goal_list()
+        self.update()
+
 
     def remove_time_pressed(self):
         index = int(self.goal_list.curselection()[0])
@@ -555,6 +566,9 @@ class Race:
                     #Only allow removal if no participant assign to time.
                     self.goal_time_list_seconds.pop(index)
             
+    def add_finish_time(self, time_in_seconds):
+        self.goal_time_list_seconds.append(time_in_seconds)
+        self.goal_time_list_seconds.sort()
 
         
     def save(self):
