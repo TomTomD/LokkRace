@@ -37,3 +37,8 @@ jobs:
     - name: Build binary
       run: |
         pyinstaller Race.py -F
+    - name: Upload Artifacs
+      uses: actions/upload-artifact@v2
+      with:
+        name: LokkRace
+        path: dist/Race.exe
