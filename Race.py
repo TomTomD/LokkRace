@@ -9,6 +9,7 @@ DATA_DIR = "./data"
 PARTICIPANTS_DIR = DATA_DIR + "/kanotister/"
 RACE_RESULT_DIR = DATA_DIR + "/races/"
 
+
 class Application(tk.Frame):
     def __init__(self, master=None, race=None):
         super().__init__(master, background="yellow")
@@ -33,9 +34,9 @@ class Application(tk.Frame):
             self.available_racers_list.insert(tk.END, name)
         #self.available_racers_list.bind("<Double-Button-1>", self.select_racer)
 
- 
 
-    
+
+
         button_frame = tk.Frame(self, background="yellow")
         button_frame.pack(side="right", expand=1, fill=tk.Y)
 
@@ -44,7 +45,7 @@ class Application(tk.Frame):
 
         participant_label = tk.Label(racers_frame, text="Deltagare", background="yellow")
         participant_label.pack()
-        
+
         self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE)
         self.racers_list.pack( expand=1, fill=tk.Y)
 
@@ -52,12 +53,12 @@ class Application(tk.Frame):
         self.add_number = tk.Entry(button_frame, width=4)
         self.add_number.insert(0, "00")
         self.add_number.pack()
-        
+
         self.add_existing_participant_button = tk.Button(button_frame)
         self.add_existing_participant_button["text"] = "Lägg till"
         self.add_existing_participant_button["command"] = self.add_existing_participant_pressed
         self.add_existing_participant_button.pack(pady=10)
-        
+
         self.add_new_participant_button = tk.Button(button_frame)
         self.add_new_participant_button["text"] = "Lägg till ny deltagare"
         self.add_new_participant_button["command"] = self.add_new_participant_pressed
@@ -67,7 +68,7 @@ class Application(tk.Frame):
         self.remove_participant_button["text"] = "Ta bort"
         self.remove_participant_button["command"] = self.remove_participant_pressed
         self.remove_participant_button.pack()
-        
+
         self.start_race_button = tk.Button(button_frame)
         self.start_race_button["text"] = "Start Race"
         self.start_race_button["command"] = self.start_race_pressed
@@ -77,7 +78,6 @@ class Application(tk.Frame):
         self.repor_button["text"] = "Rapport"
         self.repor_button["command"] = self.report_pressed
         self.repor_button.pack(side="bottom")
-        
 
     def add_existing_participant_pressed(self):
         index = int(self.available_racers_list.curselection()[0])
@@ -86,7 +86,7 @@ class Application(tk.Frame):
         self.add_number.delete(0,tk.END)
         self.add_number.insert(0, "00")
         self.update()
-        
+
     def add_new_participant_pressed(self):
         d = AddParticipantDialog(self.master, self.race)
         self.master.wait_window(d)
@@ -97,12 +97,12 @@ class Application(tk.Frame):
         selected_racer_name = self.racers_list.get(index)
         self.race.remove_participant(selected_racer_name)
         self.update()
-        
+
     def report_pressed(self):
         d = ReportDialog(self.master, self.race)
         self.master.wait_window(d)
         self.update()
-        
+
     def start_race_pressed(self):
         d = RunRaceDialog(self.master, self.race)
         self.master.wait_window(d)
@@ -161,7 +161,7 @@ class AddParticipantDialog(tk.Toplevel):
         racer = Participant(selected_racer_name)
         racer.load()
         self.best_time.insert(0, get_time_string(racer.best_time_seconds))
-        
+
     def add_pressed(self):
         best_datetime = datetime.datetime.strptime(self.best_time.get(), "%M:%S")
         time_in_seconds = best_datetime.minute * 60 + best_datetime.second
@@ -179,15 +179,15 @@ class RunRaceDialog(tk.Toplevel):
         self.grab_set()
         race.start_time = None
         self.update()
-        
-        
+
+
     def create_widgets(self):
 
         left_frame = tk.Frame(self, background="yellow")
 
         text_font = font.Font(family='Courier', size = 14)
         big_font = font.Font(size = 25)
-        
+
         self.start_list = tk.Text(left_frame, font = text_font)
         # TODO: Write protect.
         self.start_list.pack(side="top", expand=1, fill=tk.Y)
@@ -205,7 +205,7 @@ class RunRaceDialog(tk.Toplevel):
         self.save_button["font"] = big_font
 
         left_frame.pack(side="left", expand=1, fill=tk.Y)
-        
+
         right_frame = tk.Frame(self, background="yellow")
         right_frame.pack(side="right", expand=1, fill=tk.Y)
 
@@ -238,13 +238,13 @@ class RunRaceDialog(tk.Toplevel):
         self.manual_time_button = tk.Button(goal_time_frame, text = "Manuell Tid")
         self.manual_time_button["command"] = self.manual_time_pressed
         self.manual_time_button.pack(side="top")
-        
 
-        
+
+
         self.goal_list = tk.Listbox(goal_time_frame, selectmode=tk.SINGLE, font = text_font)
         self.goal_list.pack(side="top", expand=1, fill=tk.Y)
-        
-        
+
+
         self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE, font = text_font)
         self.racers_list.pack(side="right", expand=1, fill=tk.Y)
         self.racers_list.bind("<Double-Button-1>", self.assign_goal_time)
@@ -261,13 +261,13 @@ class RunRaceDialog(tk.Toplevel):
         self.remove_assigned_button["command"] = self.remove_assigned_pressed
         self.remove_assigned_button.pack(side="top")
 
-               
-        
+
+
 
     def goal_button_pressed(self, event=None):
         self.race.timestamp_goal()
         self.update_goal_list()
-        
+
     def assign_goal_time(self, event=None):
         index = int(self.racers_list.curselection()[0])
         selected_racer_name = self.racers_list.get(index)
@@ -298,7 +298,7 @@ class RunRaceDialog(tk.Toplevel):
         self.update_goal_list()
         self.update()
 
-        
+
     def start_button_pressed(self):
         self.race.start()
         self.after(500, self.timer_update)
@@ -326,7 +326,7 @@ class RunRaceDialog(tk.Toplevel):
         for entry in goal_time_list:
             self.goal_list.insert(tk.END, entry)
 
-        
+
     def timer_update(self):
         if (self.racers_list.size() > 0) :
             # Race still ongoing. Trigger again.
@@ -343,7 +343,7 @@ class ReportDialog(tk.Toplevel):
         self.create_widgets()
         self.focus_set()
         self.grab_set()
-        
+
     def create_widgets(self):
         self.report_text = tk.Text(self)
         # TODO: Write protect.
@@ -358,7 +358,7 @@ class ReportDialog(tk.Toplevel):
             print(racer_report)
             self.report_text.insert(tk.END, racer_report)
             self.report_text.insert(tk.END, "\n")
-        
+
 import json
 
 def get_time_string(time_in_seconds):
@@ -367,7 +367,7 @@ def get_time_string(time_in_seconds):
         return str(int(time_rounded/60)).zfill(2) + ":" + str(int(time_rounded%60)).zfill(2)
     else:
         return "**:**"
-    
+
 class Participant:
     best_time_seconds = 14*60
     name = "No One"
@@ -375,19 +375,19 @@ class Participant:
     race_time_seconds = 0
     race_finish_time_seconds = 0
     race_improvement_seconds = 0
-    race_history = []
 
     def __init__(self, name, best_time_seconds = None):
         self.name = name
-        if(best_time_seconds != None):
+        self.race_history = list()
+        if(best_time_seconds is not None):
             self.best_time_seconds = best_time_seconds
-            
+
     def store_race(self, race_string):
         print("STORE")
         print(self.race_history)
         self.race_history.append({"race": race_string, "time_seconds": self.race_time_seconds})
         print(self.race_history)
-                   
+
     def save(self):
         if not os.path.isdir(PARTICIPANTS_DIR):
             os.makedirs(PARTICIPANTS_DIR)
@@ -420,21 +420,21 @@ class Participant:
             string_to_return += history_element["race"] + " - "
             time = history_element["time_seconds"]
             string_to_return += get_time_string(time) + "\n"
-            if season_first == None :
+            if season_first is None:
                 season_first = time
-            if season_best > time :
+            if season_best > time:
                 season_best = time
-        if season_first != None :
+        if season_first is not None:
             string_to_return += "Säsongens första:      " + get_time_string(season_first) + "\n"
             string_to_return += "Säsongens bästa:       " + get_time_string(season_best) + "\n"
             string_to_return += "Säsongens förbättring: " + get_time_string(season_first-season_best) + "\n"
-        
-        return string_to_return
-            
-    
-    
 
-    
+        return string_to_return
+
+
+
+
+
 
 class Race:
     participants = []
@@ -449,7 +449,7 @@ class Race:
         else:
             race_duration_seconds = 0
         return race_duration_seconds
-        
+
     def get_start_list(self):
         return_string = "start".ljust(6)
         return_string += "Nr "
@@ -462,7 +462,7 @@ class Race:
         return_string += "\n"
 
         race_duration_seconds = self.get_race_duration()
-            
+
         for a in self.participants:
             return_string += get_time_string(self.longest_time - a.best_time_seconds - race_duration_seconds).ljust(6)
             return_string += str(a.number).ljust(2)[:2] + " "
@@ -487,40 +487,40 @@ class Race:
             return_string_list.append(string_entry)
 
         return return_string_list
-            
+
     def find_participant(self, name):
         for participant in self.participants:
             if participant.name == name:
                 return participant
         return None
 
-        
+
     def add_participant(self, name, number, time = None):
         current_participant = None
 
         current_participant = self.find_participant(name)
 
-        if current_participant == None:
+        if current_participant is None:
             current_participant = Participant(name)
             current_participant.load()
             self.participants.append(current_participant)
 
-        if time != None:
+        if time is not None:
             # New best time to set.
             current_participant.best_time_seconds = time
         current_participant.number = number
 
         current_participant.save()
-            
+
         self.participants = sorted(self.participants, key=attrgetter('best_time_seconds'), reverse=True)
         self.longest_time = self.participants[0].best_time_seconds
 
     def remove_participant(self, name):
         current_participant = self.find_participant(name)
 
-        if current_participant != None:
+        if current_participant is not None:
             self.participants.remove(current_participant)
-        
+
     def start(self):
         self.start_time = datetime.datetime.now()
 
@@ -528,7 +528,7 @@ class Race:
         now = datetime.datetime.now()
         race_duration_seconds = (now - self.start_time).total_seconds()
         self.goal_time_list_seconds.append(race_duration_seconds)
-        
+
     def assign_next_finish_time(self, name):
         current_participant = self.find_participant(name)
         if not self.goal_list_participant:
@@ -536,7 +536,7 @@ class Race:
             index = 0
         else:
             # If we can add this will be the index.
-            index = len(self.goal_list_participant) 
+            index = len(self.goal_list_participant)
 
         if self.goal_time_list_seconds:
             if index < len(self.goal_time_list_seconds):
@@ -550,27 +550,27 @@ class Race:
                 self.participants = sorted(self.participants, key=attrgetter('race_improvement_seconds'), reverse=True)
 
                 return True
-        
+
         return False
-        
+
     def remove_last_assigned(self):
         if self.goal_list_participant:
             removed_participant = self.goal_list_participant.pop()
             return removed_participant.name
         return None
-    
+
     def remove_finish_time_index(self, index):
         if self.goal_time_list_seconds:
             if index < len(self.goal_time_list_seconds):
                 if index >= len(self.goal_list_participant):
                     #Only allow removal if no participant assign to time.
                     self.goal_time_list_seconds.pop(index)
-            
+
     def add_finish_time(self, time_in_seconds):
         self.goal_time_list_seconds.append(time_in_seconds)
         self.goal_time_list_seconds.sort()
 
-        
+
     def save(self):
         if not os.path.isdir(RACE_RESULT_DIR):
             os.makedirs(RACE_RESULT_DIR)
