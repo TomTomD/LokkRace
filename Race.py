@@ -1,13 +1,11 @@
-import tkinter as tk
+﻿import tkinter as tk
 import tkinter.font as font
-from operator import attrgetter
 import datetime
 import glob
 import os.path
 
-DATA_DIR = "./data"
-PARTICIPANTS_DIR = DATA_DIR + "/kanotister/"
-RACE_RESULT_DIR = DATA_DIR + "/races/"
+import raceconfig
+import racebase
 
 
 class Application(tk.Frame):
@@ -28,7 +26,7 @@ class Application(tk.Frame):
 
         self.available_racers_list = tk.Listbox(self, selectmode=tk.SINGLE)
         self.available_racers_list.pack(side="right", expand=1, fill=tk.Y)
-        for file in glob.glob(PARTICIPANTS_DIR + "*.json"):
+        for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
             path, filename = os.path.split(file)
             name = filename.split('.')[0]
             self.available_racers_list.insert(tk.END, name)
@@ -146,7 +144,7 @@ class AddParticipantDialog(tk.Toplevel):
 
         self.racers_list = tk.Listbox(self, selectmode=tk.SINGLE)
         self.racers_list.pack(side="right", expand=1, fill=tk.Y)
-        for file in glob.glob(PARTICIPANTS_DIR + "*.json"):
+        for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
             path, filename = os.path.split(file)
             name = filename.split('.')[0]
             self.racers_list.insert(tk.END, name)
@@ -158,9 +156,9 @@ class AddParticipantDialog(tk.Toplevel):
         self.name.delete(0, tk.END)
         self.name.insert(0, selected_racer_name)
         self.best_time.delete(0, tk.END)
-        racer = Participant(selected_racer_name)
+        racer = racebase.Participant(selected_racer_name)
         racer.load()
-        self.best_time.insert(0, get_time_string(racer.best_time_seconds))
+        self.best_time.insert(0, racebase.get_time_string(racer.best_time_seconds))
 
     def add_pressed(self):
         best_datetime = datetime.datetime.strptime(self.best_time.get(), "%M:%S")
@@ -317,7 +315,7 @@ class RunRaceDialog(tk.Toplevel):
         self.start_list.insert(tk.END, start_list)
         self.start_list.config(state=tk.DISABLED)
         race_duration_seconds = self.race.get_race_duration()
-        self.time_label["text"] = get_time_string(race_duration_seconds)
+        self.time_label["text"] = racebase.get_time_string(race_duration_seconds)
 
     def update_goal_list(self):
         goal_time_list = self.race.get_goal_time_list()
@@ -349,244 +347,28 @@ class ReportDialog(tk.Toplevel):
         # TODO: Write protect.
         self.report_text.pack(side="top", expand=1, fill=tk.Y)
 
-        for file in glob.glob(PARTICIPANTS_DIR + "*.json"):
+        for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
             path, filename = os.path.split(file)
             name = filename.split('.')[0]
-            racer = Participant(name)
+            racer = racebase.Participant(name)
             racer.load()
             racer_report = racer.get_report()
             print(racer_report)
             self.report_text.insert(tk.END, racer_report)
             self.report_text.insert(tk.END, "\n")
 
-import json
-
-def get_time_string(time_in_seconds):
-    time_rounded = round(time_in_seconds)
-    if time_in_seconds >= 0 :
-        return str(int(time_rounded/60)).zfill(2) + ":" + str(int(time_rounded%60)).zfill(2)
-    else:
-        return "**:**"
-
-class Participant:
-    best_time_seconds = 14*60
-    name = "No One"
-    number = 0
-    race_time_seconds = 0
-    race_finish_time_seconds = 0
-    race_improvement_seconds = 0
-
-    def __init__(self, name, best_time_seconds = None):
-        self.name = name
-        self.race_history = list()
-        if(best_time_seconds is not None):
-            self.best_time_seconds = best_time_seconds
-
-    def store_race(self, race_string):
-        print("STORE")
-        print(self.race_history)
-        self.race_history.append({"race": race_string, "time_seconds": self.race_time_seconds})
-        print(self.race_history)
-
-    def save(self):
-        if not os.path.isdir(PARTICIPANTS_DIR):
-            os.makedirs(PARTICIPANTS_DIR)
-        dict_to_save = self.__dict__
-        dict_to_save["race_history"] = self.race_history
-        file_name = PARTICIPANTS_DIR + self.name + ".json"
-        with open(file_name, "w") as write_file:
-            json.dump(dict_to_save, write_file, indent = 4)
-
-    def load(self):
-        try:
-            file_name = PARTICIPANTS_DIR + self.name + ".json"
-            with open(file_name, "r") as read_file:
-                data = json.load(read_file)
-                self.best_time_seconds = data["best_time_seconds"]
-                if "race_history" in data.keys():
-                    self.race_history = data["race_history"]
-                    print("load")
-                    print(self.race_history)
-        except FileNotFoundError:
-            # OK. this is a new racer. Nothing to load.
-            print("New racer!")
-
-    def get_report(self):
-        string_to_return = self.name + "\n"
-        string_to_return += "Bästa tid:" + get_time_string(self.best_time_seconds) + "\n"
-        season_first = None
-        season_best = 10000
-        for history_element in self.race_history:
-            string_to_return += history_element["race"] + " - "
-            time = history_element["time_seconds"]
-            string_to_return += get_time_string(time) + "\n"
-            if season_first is None:
-                season_first = time
-            if season_best > time:
-                season_best = time
-        if season_first is not None:
-            string_to_return += "Säsongens första:      " + get_time_string(season_first) + "\n"
-            string_to_return += "Säsongens bästa:       " + get_time_string(season_best) + "\n"
-            string_to_return += "Säsongens förbättring: " + get_time_string(season_first-season_best) + "\n"
-
-        return string_to_return
 
 
 
 
 
 
-class Race:
-    participants = []
-    goal_time_list_seconds = []
-    goal_list_participant = []
-    start_time = None
-
-    def get_race_duration(self):
-        if self.start_time is not None:
-            now = datetime.datetime.now()
-            race_duration_seconds = (now - self.start_time).total_seconds()
-        else:
-            race_duration_seconds = 0
-        return race_duration_seconds
-
-    def get_start_list(self):
-        return_string = "start".ljust(6)
-        return_string += "Nr "
-        return_string += "Namn".ljust(20)
-        return_string += "best".ljust(6)
-        return_string += "start".ljust(6)
-        return_string += "mål".ljust(6)
-        return_string += "tid".ljust(6)
-        return_string += "förbättring".ljust(12)
-        return_string += "\n"
-
-        race_duration_seconds = self.get_race_duration()
-
-        for a in self.participants:
-            return_string += get_time_string(self.longest_time - a.best_time_seconds - race_duration_seconds).ljust(6)
-            return_string += str(a.number).ljust(2)[:2] + " "
-            return_string += a.name.ljust(20)[:20]
-            return_string += get_time_string(a.best_time_seconds).ljust(6)
-            return_string += get_time_string(self.longest_time - a.best_time_seconds).ljust(6)
-            return_string += get_time_string(a.race_finish_time_seconds).ljust(6)
-            return_string += get_time_string(a.race_time_seconds).ljust(6)
-            return_string += get_time_string(a.race_improvement_seconds).ljust(12)
-            return_string += "\n"
-        return return_string
-
-    def get_goal_time_list(self):
-        return_string_list = []
-        index = 0;
-        for time_entry in self.goal_time_list_seconds:
-            string_entry = get_time_string(time_entry)
-            if self.goal_list_participant:
-                if index < len(self.goal_list_participant):
-                    string_entry += " - " + self.goal_list_participant[index].name
-            index = index + 1
-            return_string_list.append(string_entry)
-
-        return return_string_list
-
-    def find_participant(self, name):
-        for participant in self.participants:
-            if participant.name == name:
-                return participant
-        return None
 
 
-    def add_participant(self, name, number, time = None):
-        current_participant = None
-
-        current_participant = self.find_participant(name)
-
-        if current_participant is None:
-            current_participant = Participant(name)
-            current_participant.load()
-            self.participants.append(current_participant)
-
-        if time is not None:
-            # New best time to set.
-            current_participant.best_time_seconds = time
-        current_participant.number = number
-
-        current_participant.save()
-
-        self.participants = sorted(self.participants, key=attrgetter('best_time_seconds'), reverse=True)
-        self.longest_time = self.participants[0].best_time_seconds
-
-    def remove_participant(self, name):
-        current_participant = self.find_participant(name)
-
-        if current_participant is not None:
-            self.participants.remove(current_participant)
-
-    def start(self):
-        self.start_time = datetime.datetime.now()
-
-    def timestamp_goal(self):
-        now = datetime.datetime.now()
-        race_duration_seconds = (now - self.start_time).total_seconds()
-        self.goal_time_list_seconds.append(race_duration_seconds)
-
-    def assign_next_finish_time(self, name):
-        current_participant = self.find_participant(name)
-        if not self.goal_list_participant:
-            # List empty. index will be 0
-            index = 0
-        else:
-            # If we can add this will be the index.
-            index = len(self.goal_list_participant)
-
-        if self.goal_time_list_seconds:
-            if index < len(self.goal_time_list_seconds):
-                finish_time = self.goal_time_list_seconds[index]
-                self.goal_list_participant.append(current_participant)
-                start_time_seconds = self.longest_time - current_participant.best_time_seconds
-                race_result_seconds = finish_time - start_time_seconds
-                current_participant.race_finish_time_seconds = finish_time
-                current_participant.race_time_seconds = race_result_seconds
-                current_participant.race_improvement_seconds = current_participant.best_time_seconds - race_result_seconds
-                self.participants = sorted(self.participants, key=attrgetter('race_improvement_seconds'), reverse=True)
-
-                return True
-
-        return False
-
-    def remove_last_assigned(self):
-        if self.goal_list_participant:
-            removed_participant = self.goal_list_participant.pop()
-            return removed_participant.name
-        return None
-
-    def remove_finish_time_index(self, index):
-        if self.goal_time_list_seconds:
-            if index < len(self.goal_time_list_seconds):
-                if index >= len(self.goal_list_participant):
-                    #Only allow removal if no participant assign to time.
-                    self.goal_time_list_seconds.pop(index)
-
-    def add_finish_time(self, time_in_seconds):
-        self.goal_time_list_seconds.append(time_in_seconds)
-        self.goal_time_list_seconds.sort()
 
 
-    def save(self):
-        if not os.path.isdir(RACE_RESULT_DIR):
-            os.makedirs(RACE_RESULT_DIR)
-        race_string = self.start_time.strftime("%Y%m%d-%H%M%S")
-        file_name = RACE_RESULT_DIR + race_string + ".txt"
-        with open(file_name, "w") as write_file:
-            write_file.write(self.get_start_list())
 
-        for a in self.participants:
-            if a.best_time_seconds > a.race_time_seconds :
-                a.best_time_seconds = a.race_time_seconds
-            a.store_race(race_string)
-            a.save()
-
-
-race = Race()
+race = racebase.Race()
 root = tk.Tk()
 app = Application(master=root, race=race)
 app.mainloop()
