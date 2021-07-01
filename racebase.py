@@ -14,7 +14,7 @@ def get_time_string(time_in_seconds):
 
 
 class Participant:
-    best_time_seconds = 14 * 60
+    best_time_seconds = 50 * 60
     name = "No One"
     number = 0
     race_time_seconds = 0
@@ -82,6 +82,17 @@ class Race:
     goal_time_list_seconds = []
     goal_list_participant = []
     start_time = None
+    longest_time = raceconfig.RACE_INITIAL_TIME
+
+    def get_participant_start_time(self, participant):
+        if participant.best_time_seconds > raceconfig.RACE_INITIAL_TIME:
+            calculated_time = raceconfig.RACE_INITIAL_TIME # Limit so we don't spread out the starting field too much.
+        else:
+            calculated_time = participant.best_time_seconds
+
+        start_time = self.longest_time - calculated_time
+
+        return start_time
 
     def get_race_duration(self):
         if self.start_time is not None:
@@ -105,11 +116,11 @@ class Race:
         race_duration_seconds = self.get_race_duration()
 
         for a in self.participants:
-            return_string += get_time_string(self.longest_time - a.best_time_seconds - race_duration_seconds).ljust(6)
+            return_string += get_time_string(self.get_participant_start_time(a) - race_duration_seconds).ljust(6)
             return_string += str(a.number).ljust(2)[:2] + " "
             return_string += a.name.ljust(20)[:20]
             return_string += get_time_string(a.best_time_seconds).ljust(6)
-            return_string += get_time_string(self.longest_time - a.best_time_seconds).ljust(6)
+            return_string += get_time_string(self.get_participant_start_time(a)).ljust(6)
             return_string += get_time_string(a.race_finish_time_seconds).ljust(6)
             return_string += get_time_string(a.race_time_seconds).ljust(6)
             return_string += get_time_string(a.race_improvement_seconds).ljust(12)
@@ -152,7 +163,11 @@ class Race:
         current_participant.save()
 
         self.participants = sorted(self.participants, key=attrgetter('best_time_seconds'), reverse=True)
-        self.longest_time = self.participants[0].best_time_seconds
+        longest_best_time = self.participants[0].best_time_seconds
+        if longest_best_time > raceconfig.RACE_INITIAL_TIME:
+            self.longest_time = raceconfig.RACE_INITIAL_TIME
+        else:
+            self.longest_time = self.participants[0].best_time_seconds
 
     def remove_participant(self, name):
         current_participant = self.find_participant(name)
@@ -181,7 +196,7 @@ class Race:
             if index < len(self.goal_time_list_seconds):
                 finish_time = self.goal_time_list_seconds[index]
                 self.goal_list_participant.append(current_participant)
-                start_time_seconds = self.longest_time - current_participant.best_time_seconds
+                start_time_seconds = self.get_participant_start_time(current_participant)
                 race_result_seconds = finish_time - start_time_seconds
                 current_participant.race_finish_time_seconds = finish_time
                 current_participant.race_time_seconds = race_result_seconds

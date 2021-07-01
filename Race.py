@@ -22,18 +22,13 @@ class Application(tk.Frame):
         self.start_list = tk.Text(self)
         self.start_list.pack(side="left", expand=1, fill=tk.Y)
 
-
-
         self.available_racers_list = tk.Listbox(self, selectmode=tk.SINGLE)
         self.available_racers_list.pack(side="right", expand=1, fill=tk.Y)
         for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
             path, filename = os.path.split(file)
             name = filename.split('.')[0]
             self.available_racers_list.insert(tk.END, name)
-        #self.available_racers_list.bind("<Double-Button-1>", self.select_racer)
-
-
-
+        # self.available_racers_list.bind("<Double-Button-1>", self.select_racer)
 
         button_frame = tk.Frame(self, background="yellow")
         button_frame.pack(side="right", expand=1, fill=tk.Y)
@@ -45,7 +40,7 @@ class Application(tk.Frame):
         participant_label.pack()
 
         self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE)
-        self.racers_list.pack( expand=1, fill=tk.Y)
+        self.racers_list.pack(expand=1, fill=tk.Y)
 
         tk.Label(button_frame, text="Nummer", background="yellow").pack()
         self.add_number = tk.Entry(button_frame, width=4)
@@ -81,7 +76,7 @@ class Application(tk.Frame):
         index = int(self.available_racers_list.curselection()[0])
         selected_racer_name = self.available_racers_list.get(index)
         self.race.add_participant(selected_racer_name, self.add_number.get())
-        self.add_number.delete(0,tk.END)
+        self.add_number.delete(0, tk.END)
         self.add_number.insert(0, "00")
         self.update()
 
@@ -117,6 +112,7 @@ class Application(tk.Frame):
         for participant in self.race.participants:
             self.racers_list.insert(tk.END, participant.name)
 
+
 class AddParticipantDialog(tk.Toplevel):
     def __init__(self, master=None, race=None):
         super().__init__(master, background="yellow")
@@ -134,7 +130,7 @@ class AddParticipantDialog(tk.Toplevel):
         self.name.insert(0, "Namn")
         self.name.pack(side="left")
         self.best_time = tk.Entry(self)
-        self.best_time.insert(0, "14:00")
+        self.best_time.insert(0, "50:00")
         self.best_time.pack(side="left")
 
         self.add_button = tk.Button(self)
@@ -178,15 +174,14 @@ class RunRaceDialog(tk.Toplevel):
         race.start_time = None
         self.update()
 
-
     def create_widgets(self):
 
         left_frame = tk.Frame(self, background="yellow")
 
-        text_font = font.Font(family='Courier', size = 14)
-        big_font = font.Font(size = 25)
+        text_font = font.Font(family='Courier', size=14)
+        big_font = font.Font(size=25)
 
-        self.start_list = tk.Text(left_frame, font = text_font)
+        self.start_list = tk.Text(left_frame, font=text_font)
         # TODO: Write protect.
         self.start_list.pack(side="top", expand=1, fill=tk.Y)
 
@@ -196,7 +191,7 @@ class RunRaceDialog(tk.Toplevel):
         self.start_button["font"] = big_font
         self.start_button.pack(side="bottom")
 
-        self.time_label = tk.Label(left_frame, text="00:00", font = text_font)
+        self.time_label = tk.Label(left_frame, text="00:00", font=text_font)
         self.time_label.pack(side="bottom")
 
         self.save_button = tk.Button(left_frame, text="Save Race", command=self.save_button_pressed)
@@ -224,8 +219,7 @@ class RunRaceDialog(tk.Toplevel):
         self.bind("m", self.goal_button_pressed)
         self.bind("M", self.goal_button_pressed)
 
-
-        self.remove_time_button = tk.Button(goal_time_frame, text = "Ta bort\nTid")
+        self.remove_time_button = tk.Button(goal_time_frame, text="Ta bort\nTid")
         self.remove_time_button["command"] = self.remove_time_pressed
         self.remove_time_button.pack(side="right")
 
@@ -233,17 +227,14 @@ class RunRaceDialog(tk.Toplevel):
         self.manual_time.insert(0, "14:00")
         self.manual_time.pack(side="top")
 
-        self.manual_time_button = tk.Button(goal_time_frame, text = "Manuell Tid")
+        self.manual_time_button = tk.Button(goal_time_frame, text="Manuell Tid")
         self.manual_time_button["command"] = self.manual_time_pressed
         self.manual_time_button.pack(side="top")
 
-
-
-        self.goal_list = tk.Listbox(goal_time_frame, selectmode=tk.SINGLE, font = text_font)
+        self.goal_list = tk.Listbox(goal_time_frame, selectmode=tk.SINGLE, font=text_font)
         self.goal_list.pack(side="top", expand=1, fill=tk.Y)
 
-
-        self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE, font = text_font)
+        self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE, font=text_font)
         self.racers_list.pack(side="right", expand=1, fill=tk.Y)
         self.racers_list.bind("<Double-Button-1>", self.assign_goal_time)
         for participant in self.race.participants:
@@ -251,16 +242,13 @@ class RunRaceDialog(tk.Toplevel):
 
         assign_buttons_frame = tk.Frame(racers_frame, background="yellow")
         assign_buttons_frame.pack(side="left")
-        self.race_set_time_button = tk.Button(assign_buttons_frame, text = "Sätt tid\n<--")
+        self.race_set_time_button = tk.Button(assign_buttons_frame, text="Sätt tid\n<--")
         self.race_set_time_button["command"] = self.assign_goal_time
         self.race_set_time_button.pack(side="top")
 
-        self.remove_assigned_button = tk.Button(assign_buttons_frame, text = "Ångra\n-->")
+        self.remove_assigned_button = tk.Button(assign_buttons_frame, text="Ångra\n-->")
         self.remove_assigned_button["command"] = self.remove_assigned_pressed
         self.remove_assigned_button.pack(side="top")
-
-
-
 
     def goal_button_pressed(self, event=None):
         self.race.timestamp_goal()
@@ -289,13 +277,11 @@ class RunRaceDialog(tk.Toplevel):
         self.update_goal_list()
         self.update()
 
-
     def remove_time_pressed(self):
         index = int(self.goal_list.curselection()[0])
         self.race.remove_finish_time_index(index)
         self.update_goal_list()
         self.update()
-
 
     def start_button_pressed(self):
         self.race.start()
@@ -324,14 +310,14 @@ class RunRaceDialog(tk.Toplevel):
         for entry in goal_time_list:
             self.goal_list.insert(tk.END, entry)
 
-
     def timer_update(self):
-        if (self.racers_list.size() > 0) :
+        if (self.racers_list.size() > 0):
             # Race still ongoing. Trigger again.
             self.after(500, self.timer_update)
         else:
             self.save_button.pack()
         self.update()
+
 
 class ReportDialog(tk.Toplevel):
     def __init__(self, master=None, race=None):
@@ -356,16 +342,6 @@ class ReportDialog(tk.Toplevel):
             print(racer_report)
             self.report_text.insert(tk.END, racer_report)
             self.report_text.insert(tk.END, "\n")
-
-
-
-
-
-
-
-
-
-
 
 
 race = racebase.Race()
