@@ -24,13 +24,7 @@ jobs:
       - name: Build binary
         id: build_binary
         run: |
-          pyinstaller Race.py -F
-      - name: Upload Artifacs
-        uses: actions/upload-artifact@v2
-        with:
-          name: LokkRace
-          path: dist/Race.exe
-
+          pyinstaller lokk_race.py -F
       - name: Upload Release Asset
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
@@ -38,7 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./dist/Race.exe
-          asset_name: Race.exe
+          asset_path: ./dist/lokk_race.exe
+          asset_name: lokk_race.exe
           asset_content_type: application/octet-stream
 
