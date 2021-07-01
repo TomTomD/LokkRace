@@ -1,0 +1,44 @@
+on:
+  release:
+    types:
+      - created
+
+name: Upload Release Asset
+
+jobs:
+  build:
+    name: Upload Release Asset
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          if(Test-Path -Path requirements.txt -PathType Leaf) { pip install -r requirements.txt}
+      - name: Build binary
+        id: build_binary
+        run: |
+          pyinstaller Race.py -F
+      - name: Upload Artifacs
+        uses: actions/upload-artifact@v2
+        with:
+          name: LokkRace
+          path: dist/Race.exe
+
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./dist/Race.exe
+          asset_name: Race.exe
+          asset_content_type: application/octet-stream
+
