@@ -36,7 +36,7 @@ jobs:
         pytest
     - name: Build binary
       run: |
-        pyinstaller lokk_race.py -F
+        pyinstaller --icon loddekk.ico --onefile lokk_race.py
     - name: Upload Artifacs
       uses: actions/upload-artifact@v2
       with:
