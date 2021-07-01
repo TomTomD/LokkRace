@@ -3,7 +3,7 @@ import racebase
 
 def test_initial_values():
     pelle = racebase.Participant('Pelle')
-    assert pelle.best_time_seconds == 14*60
+    assert pelle.best_time_seconds == 50*60
 
 
 def test_start_times():
