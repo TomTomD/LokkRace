@@ -59,22 +59,49 @@ class Participant:
     def get_report(self):
         string_to_return = self.name + "\n"
         string_to_return += "Bästa tid:" + get_time_string(self.best_time_seconds) + "\n"
+        last_season_best = None
         season_first = None
         season_best = 10000
+        season_count = 0
+        season_result = None
+        current_year = str(datetime.date.today().year)
+        last_year = str(datetime.date.today().year - 1)
         for history_element in self.race_history:
             string_to_return += history_element["race"] + " - "
             time = history_element["time_seconds"]
             string_to_return += get_time_string(time) + "\n"
-            if season_first is None:
-                season_first = time
-            if season_best > time:
-                season_best = time
-        if season_first is not None:
-            string_to_return += "Säsongens första:      " + get_time_string(season_first) + "\n"
-            string_to_return += "Säsongens bästa:       " + get_time_string(season_best) + "\n"
-            string_to_return += "Säsongens förbättring: " + get_time_string(season_first - season_best) + "\n"
+            if history_element["race"].startswith(current_year):
+                season_count += 1
+                if season_first is None:
+                    season_first = time
+                if season_best > time:
+                    season_best = time
+            if history_element["race"].startswith(last_year):
+                if last_season_best is None:
+                    last_season_best = time
+                elif last_season_best > time:
+                    last_season_best = time
 
-        return string_to_return
+        if season_first is not None:
+            string_to_return += "Säsong " + current_year + " resultat\n"
+            if last_season_best is None:
+                string_to_return += "Säsongens första:      " + get_time_string(season_first) + "\n"
+                compare_time = season_first
+            else:
+                string_to_return += "Förra säsongens bästa:      " + get_time_string(last_season_best) + "\n"
+                compare_time = last_season_best
+
+            string_to_return += "Säsongens bästa:       " + get_time_string(season_best) + "\n"
+            string_to_return += "Säsongens förbättring: " + get_time_string(compare_time - season_best) + "\n"
+            string_to_return += "Säsongens antal race:  " + str(season_count) + "\n"
+            string_to_return += self.name + "\t" + str(season_count) + "\t" + get_time_string(compare_time - season_best) + "\n"
+            season_result = {
+                "name": self.name,
+                "count": season_count,
+                "improvement": compare_time - season_best
+            }
+
+        return string_to_return , season_result
 
 
 class Race:

@@ -3,6 +3,7 @@ import tkinter.font as font
 import datetime
 import glob
 import os.path
+import operator
 
 import raceconfig
 import racebase
@@ -36,7 +37,9 @@ class Application(tk.Frame):
         racers_frame = tk.Frame(self, background="yellow")
         racers_frame.pack(side="right", expand=1, fill=tk.Y)
 
-        participant_label = tk.Label(racers_frame, text="Deltagare", background="yellow")
+        self.participant_label_text = tk.StringVar()
+        self.participant_label_text.set("Deltagare")
+        participant_label = tk.Label(racers_frame, textvariable=self.participant_label_text, background="yellow")
         participant_label.pack()
 
         self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE)
@@ -111,6 +114,8 @@ class Application(tk.Frame):
         self.racers_list.delete(0, tk.END)
         for participant in self.race.participants:
             self.racers_list.insert(tk.END, participant.name)
+
+        self.participant_label_text.set("Deltagare (" + str(len(self.race.participants)) + ")")
 
 
 class AddParticipantDialog(tk.Toplevel):
@@ -208,7 +213,9 @@ class RunRaceDialog(tk.Toplevel):
         racers_frame = tk.Frame(right_frame, background="yellow")
         racers_frame.pack(side="left", expand=1, fill=tk.Y)
 
-        tk.Label(goal_time_frame, background="yellow", text="eller tryck M").pack(side="bottom")
+        self.info_text = tk.StringVar()
+        self.info_text.set("eller tryck M")
+        tk.Label(goal_time_frame, background="yellow", textvariable=self.info_text).pack(side="bottom")
         self.goal_button = tk.Button(goal_time_frame)
         self.goal_button["text"] = "MÅL!"
         self.goal_button["command"] = self.goal_button_pressed
@@ -286,6 +293,7 @@ class RunRaceDialog(tk.Toplevel):
     def start_button_pressed(self):
         self.race.start()
         self.after(500, self.timer_update)
+        self.start_button["state"] = "disabled"
         self.start_button.pack_forget()
 
     def save_button_pressed(self):
@@ -309,6 +317,7 @@ class RunRaceDialog(tk.Toplevel):
         self.goal_list.delete(0, tk.END)
         for entry in goal_time_list:
             self.goal_list.insert(tk.END, entry)
+        self.info_text.set(str(len(goal_time_list)) + "/" + str(len(self.race.participants)))
 
     def timer_update(self):
         if (self.racers_list.size() > 0):
@@ -332,16 +341,34 @@ class ReportDialog(tk.Toplevel):
         self.report_text = tk.Text(self)
         # TODO: Write protect.
         self.report_text.pack(side="top", expand=1, fill=tk.Y)
+        season_reports = []
 
         for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
             path, filename = os.path.split(file)
             name = filename.split('.')[0]
             racer = racebase.Participant(name)
             racer.load()
-            racer_report = racer.get_report()
+            racer_report, season_result = racer.get_report()
             print(racer_report)
             self.report_text.insert(tk.END, racer_report)
             self.report_text.insert(tk.END, "\n")
+            if season_result is not None:
+                season_reports.append(season_result)
+        season_reports.sort(key=operator.itemgetter('count'), reverse=True)
+        self.report_text.insert(tk.END, "\n\nFlest starter denna säsong\n")
+        total_start_count = 0
+        for report in season_reports:
+            report_string = "\t" + report["name"].ljust(20) + "\t" + str(report["count"]) + " starter\n"
+            self.report_text.insert(tk.END, report_string)
+            total_start_count += report["count"]
+        self.report_text.insert(tk.END, "\nTotalt antal starter: " + str(total_start_count))
+
+        season_reports.sort(key=operator.itemgetter('improvement'), reverse=True)
+        self.report_text.insert(tk.END, "\n\nBäst förbättring denna säsong\n")
+        for report in season_reports:
+            report_string = "\t" + report["name"].ljust(20) + "\t" + racebase.get_time_string(report["improvement"]) + "\n"
+            self.report_text.insert(tk.END, report_string)
+            total_start_count += report["count"]
 
 
 race = racebase.Race()
