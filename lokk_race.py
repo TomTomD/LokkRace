@@ -15,7 +15,7 @@ class Application(tk.Frame):
         master.title("LöKK OnsdagsRejs")
         self.master = master
         self.race = race
-        self.pack()
+        self.pack( expand=1, fill=tk.BOTH)
         self.create_widgets()
         self.update()
 
@@ -23,13 +23,16 @@ class Application(tk.Frame):
         self.start_list = tk.Text(self)
         self.start_list.pack(side="left", expand=1, fill=tk.Y)
 
-        self.available_racers_list = tk.Listbox(self, selectmode=tk.SINGLE)
-        self.available_racers_list.pack(side="right", expand=1, fill=tk.Y)
-        for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
-            path, filename = os.path.split(file)
-            name = filename.split('.')[0]
-            self.available_racers_list.insert(tk.END, name)
-        # self.available_racers_list.bind("<Double-Button-1>", self.select_racer)
+        available_racers_frame = tk.Frame(self, background="yellow")
+        available_racers_frame.pack(side="right", expand=1, fill=tk.Y)
+        self.racers_filter_var = tk.StringVar()
+        self.racers_filter_var.trace_add("write", self.filter_change)
+
+        self.racers_filter = tk.Entry(available_racers_frame, textvariable=self.racers_filter_var)
+        self.racers_filter.pack(fill=tk.X, side=tk.TOP)
+        self.available_racers_list = tk.Listbox(available_racers_frame, selectmode=tk.SINGLE)
+        self.available_racers_list.pack( expand=1, fill=tk.BOTH, side=tk.TOP)
+        self.filter_change(None,None,None)
 
         button_frame = tk.Frame(self, background="yellow")
         button_frame.pack(side="right", expand=1, fill=tk.Y)
@@ -74,6 +77,15 @@ class Application(tk.Frame):
         self.repor_button["text"] = "Rapport"
         self.repor_button["command"] = self.report_pressed
         self.repor_button.pack(side="bottom")
+
+    def filter_change(self, a, b, c):
+        self.available_racers_list.delete(0, tk.END)
+        for file in glob.glob(raceconfig.PARTICIPANTS_DIR + "*.json"):
+            path, filename = os.path.split(file)
+            name = filename.split('.')[0]
+            filter = self.racers_filter_var.get()
+            if filter in name:
+                self.available_racers_list.insert(tk.END, name)
 
     def add_existing_participant_pressed(self):
         index = int(self.available_racers_list.curselection()[0])
