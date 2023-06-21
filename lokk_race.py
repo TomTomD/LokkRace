@@ -84,7 +84,7 @@ class Application(tk.Frame):
             path, filename = os.path.split(file)
             name = filename.split('.')[0]
             filter = self.racers_filter_var.get()
-            if filter in name:
+            if filter.upper() in name.upper():
                 self.available_racers_list.insert(tk.END, name)
 
     def add_existing_participant_pressed(self):
@@ -195,10 +195,10 @@ class RunRaceDialog(tk.Toplevel):
 
         left_frame = tk.Frame(self, background="yellow")
 
-        text_font = font.Font(family='Courier', size=14)
+        self.text_font = font.Font(family='Courier', size=14)
         big_font = font.Font(size=25)
 
-        self.start_list = tk.Text(left_frame, font=text_font)
+        self.start_list = tk.Text(left_frame, font=self.text_font)
         # TODO: Write protect.
         self.start_list.pack(side="top", expand=1, fill=tk.Y)
 
@@ -208,7 +208,7 @@ class RunRaceDialog(tk.Toplevel):
         self.start_button["font"] = big_font
         self.start_button.pack(side="bottom")
 
-        self.time_label = tk.Label(left_frame, text="00:00", font=text_font)
+        self.time_label = tk.Label(left_frame, text="00:00", font=self.text_font)
         self.time_label.pack(side="bottom")
 
         self.save_button = tk.Button(left_frame, text="Save Race", command=self.save_button_pressed)
@@ -250,10 +250,10 @@ class RunRaceDialog(tk.Toplevel):
         self.manual_time_button["command"] = self.manual_time_pressed
         self.manual_time_button.pack(side="top")
 
-        self.goal_list = tk.Listbox(goal_time_frame, selectmode=tk.SINGLE, font=text_font)
+        self.goal_list = tk.Listbox(goal_time_frame, selectmode=tk.SINGLE, font=self.text_font)
         self.goal_list.pack(side="top", expand=1, fill=tk.Y)
 
-        self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE, font=text_font)
+        self.racers_list = tk.Listbox(racers_frame, selectmode=tk.SINGLE, font=self.text_font)
         self.racers_list.pack(side="right", expand=1, fill=tk.Y)
         self.racers_list.bind("<Double-Button-1>", self.assign_goal_time)
         for participant in self.race.participants:
@@ -268,6 +268,20 @@ class RunRaceDialog(tk.Toplevel):
         self.remove_assigned_button = tk.Button(assign_buttons_frame, text="Ångra\n-->")
         self.remove_assigned_button["command"] = self.remove_assigned_pressed
         self.remove_assigned_button.pack(side="top")
+
+        self.font_size_minus_button = tk.Button(goal_time_frame, text="A-")
+        self.font_size_minus_button["command"] = self.font_size_minus_pressed
+        self.font_size_minus_button.pack(side="right")
+
+        self.font_size_plus_button = tk.Button(goal_time_frame, text="A+")
+        self.font_size_plus_button["command"] = self.font_size_plus_pressed
+        self.font_size_plus_button.pack(side="right")
+    
+    def font_size_minus_pressed(self, event=None):
+        self.text_font["size"] -= 1
+
+    def font_size_plus_pressed(self, event=None):
+        self.text_font["size"] += 1
 
     def goal_button_pressed(self, event=None):
         self.race.timestamp_goal()
