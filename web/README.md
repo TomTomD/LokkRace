@@ -37,8 +37,13 @@ it shows a green pass/fail summary (no toolchain needed).
 
 ## Deploy to GitHub Pages
 
-Point Pages at this `web/` folder (Settings → Pages → source), or move its
-contents to the repo root / `docs/`. It's fully static, so nothing else is needed.
+Deployment is automated by `.github/workflows/pages.yml`, which publishes this
+`web/` folder on every push to `main` that touches `web/**`.
+
+One-time setup: in the repo, **Settings → Pages → Source**, choose
+**"GitHub Actions"** (not "Deploy from a branch" — that only allows `/` or
+`/docs`, not a subfolder). After that the workflow deploys automatically; you
+can also trigger it manually from the Actions tab (workflow_dispatch).
 
 ## Data bundle format
 
