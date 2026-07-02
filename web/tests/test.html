@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LokkRace — racebase.js tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    .pass { color: #137a2b; }
+    .fail { color: #b00020; font-weight: bold; }
+    pre { background: #f4f4f4; padding: .5rem; overflow-x: auto; }
+    #summary { font-size: 1.2rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>racebase.js tests</h1>
+  <div id="summary">Running…</div>
+  <ul id="results"></ul>
+
+  <script type="module">
+    import {
+      Participant, Race, getTimeString, parseTimeString,
+      DEFAULT_BEST_TIME, RACE_INITIAL_TIME,
+    } from "../js/racebase.js";
+
+    const results = [];
+    function test(name, fn) {
+      try { fn(); results.push({ name, ok: true }); }
+      catch (e) { results.push({ name, ok: false, msg: e.message }); }
+    }
+    function assert(cond, msg) { if (!cond) throw new Error(msg || "assertion failed"); }
+    function assertEq(a, b, msg) {
+      if (a !== b) throw new Error(`${msg || "not equal"}\n  got:      ${JSON.stringify(a)}\n  expected: ${JSON.stringify(b)}`);
+    }
+    function assertIncludes(haystack, needle) {
+      if (!haystack.includes(needle)) throw new Error(`expected output to include:\n  ${JSON.stringify(needle)}\nfull output:\n${haystack}`);
+    }
+
+    // --- ported from test_participant.py ---
+    test("test_initial_values", () => {
+      const pelle = new Participant("Pelle");
+      assertEq(pelle.best_time_seconds, 50 * 60);
+    });
+
+    test("test_start_times", () => {
+      const race = new Race();
+      race.addParticipant("Anna", "14", 15 * 60);
+      race.addParticipant("Pelle", "19", 16 * 60 + 30);
+      race.addParticipant("Sara", "49", 10 * 60 + 22);
+      const list = race.getStartList();
+      assertIncludes(list, "00:00 " + "14 " + "Anna".padEnd(20) + "15:00 " + "00:00 ");
+      assertIncludes(list, "00:00 " + "19 " + "Pelle".padEnd(20) + "16:30 " + "00:00 ");
+      assertIncludes(list, "03:38 " + "49 " + "Sara".padEnd(20) + "10:22 " + "03:38 ");
+    });
+
+    // --- format helpers ---
+    test("getTimeString", () => {
+      assertEq(getTimeString(218), "03:38");
+      assertEq(getTimeString(-5), "**:**");
+      assertEq(getTimeString(0), "00:00");
+      assertEq(getTimeString(59.6), "01:00"); // rounds up across the minute
+      assertEq(getTimeString(900), "15:00");
+    });
+
+    test("parseTimeString", () => {
+      assertEq(parseTimeString("15:00"), 900);
+      assertEq(parseTimeString("16:30"), 990);
+      assertEq(parseTimeString("bad"), null);
+    });
+
+    // --- constants ---
+    test("constants", () => {
+      assertEq(RACE_INITIAL_TIME, 14 * 60);
+      assertEq(DEFAULT_BEST_TIME, 50 * 60);
+    });
+
+    // --- finish matching (steps 4+5) ---
+    test("assign finish times computes improvement", () => {
+      const race = new Race();
+      // Full field so longest_time is capped at RACE_INITIAL_TIME (840s):
+      race.addParticipant("Anna", "14", 15 * 60);
+      race.addParticipant("Pelle", "19", 16 * 60 + 30);
+      race.addParticipant("Sara", "49", 10 * 60 + 22); // best 622s, starts at 03:38 (218s)
+      // Simulate two goal crossings captured by button:
+      race.addFinishTime(600);
+      race.addFinishTime(700);
+      const ok = race.assignNextFinishTime("Sara");
+      assert(ok, "assignment should succeed");
+      const sara = race.findParticipant("Sara");
+      // result = finishTime(600) - startTime(218) = 382; improvement = 622 - 382 = 240
+      assertEq(sara.race_time_seconds, 382);
+      assertEq(sara.race_improvement_seconds, 240);
+    });
+
+    test("season report buckets by year", () => {
+      const p = new Participant("Kim", 700);
+      p.race_history = [
+        { race: "20250601-180000", time_seconds: 720 },
+        { race: "20260601-180000", time_seconds: 680 },
+      ];
+      const { seasonResult } = p.getReport(2026);
+      assertEq(seasonResult.count, 1);
+      assertEq(seasonResult.improvement, 720 - 680); // vs last season's best
+    });
+
+    test("assignResults matches order and ranks by improvement", () => {
+      const race = new Race();
+      race.addParticipant("Anna", "14", 15 * 60);       // best 900, start 0
+      race.addParticipant("Pelle", "19", 16 * 60 + 30); // best 990, start 0
+      race.addParticipant("Sara", "49", 10 * 60 + 22);  // best 622, start 218
+      race.goal_time_list_seconds = [600, 650, 900];    // crossings in order
+      race.assignResults(["Sara", "Anna", "Pelle"]);
+      // Sara: 600-218=382 (impr 240); Anna: 650 (impr 250); Pelle: 900 (impr 90)
+      assertEq(race.participants[0].name, "Anna"); // most improved wins
+      assertEq(race.findParticipant("Sara").race_time_seconds, 382);
+      assertEq(race.findParticipant("Sara").race_improvement_seconds, 240);
+      assertEq(race.findParticipant("Anna").race_improvement_seconds, 250);
+    });
+
+    test("assignResults tolerates a gap (null crossing)", () => {
+      const race = new Race();
+      race.addParticipant("Anna", "14", 15 * 60);
+      race.addParticipant("Sara", "49", 10 * 60 + 22);
+      race.goal_time_list_seconds = [600, 650];
+      race.assignResults([null, "Sara"]); // first crossing unmatched
+      assertEq(race.findParticipant("Anna").race_finish_time_seconds, 0);
+      assert(race.findParticipant("Sara").race_finish_time_seconds > 0, "Sara matched");
+    });
+
+    test("finalize folds best time and records finishers only", () => {
+      const race = new Race();
+      race.addParticipant("Anna", "14", 15 * 60);       // best 900
+      race.addParticipant("Sara", "49", 10 * 60 + 22);  // best 622
+      race.goal_time_list_seconds = [650];
+      race.assignResults(["Anna"]);                     // only Anna finishes (result 650)
+      race.finalize();
+      assertEq(race.findParticipant("Anna").best_time_seconds, 650); // improved 900 -> 650
+      assertEq(race.findParticipant("Anna").race_history.length, 1);
+      assertEq(race.findParticipant("Sara").race_history.length, 0);  // non-finisher not recorded
+      assertEq(race.findParticipant("Sara").best_time_seconds, 622);  // unchanged
+    });
+
+    test("snapshot / fromSnapshot round-trips", () => {
+      const race = new Race();
+      race.addParticipant("Anna", "14", 15 * 60);
+      race.addFinishTime(600);
+      const roster = [new Participant("Anna", 15 * 60)];
+      const restored = Race.fromSnapshot(race.snapshot(), roster);
+      assertEq(restored.participants.length, 1);
+      assertEq(restored.participants[0].name, "Anna");
+      assertEq(restored.goal_time_list_seconds[0], 600);
+      // re-linked to the roster object so finalize writes back
+      assert(restored.participants[0] === roster[0], "should reuse roster object");
+    });
+
+    // --- render ---
+    const ul = document.getElementById("results");
+    let passed = 0;
+    for (const r of results) {
+      const li = document.createElement("li");
+      li.className = r.ok ? "pass" : "fail";
+      li.textContent = (r.ok ? "PASS  " : "FAIL  ") + r.name;
+      if (!r.ok) {
+        const pre = document.createElement("pre");
+        pre.textContent = r.msg;
+        li.appendChild(pre);
+      }
+      ul.appendChild(li);
+      if (r.ok) passed++;
+    }
+    const summary = document.getElementById("summary");
+    summary.textContent = `${passed}/${results.length} passed`;
+    summary.className = passed === results.length ? "pass" : "fail";
+  </script>
+</body>
+</html>

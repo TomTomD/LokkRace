@@ -1,0 +1,9 @@
+# Real participant/event data — never commit (contains personal data)
+data/
+*.zip
+
+# Python / tooling artifacts
+__pycache__/
+
+# Local Claude Code config
+.claude/

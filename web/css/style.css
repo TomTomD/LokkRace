@@ -1,0 +1,255 @@
+:root {
+  --bg: #fffef0;       /* the desktop app's yellow, softened */
+  --panel: #ffffff;
+  --ink: #222;
+  --muted: #777;
+  --line: #e2e2c8;
+  --accent: #d9a400;
+  --accent-ink: #4a3800;
+  --sel: #fff3bf;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  flex-wrap: wrap;
+}
+header h1 { margin: 0; font-size: 1.4rem; }
+.bundle-controls { display: flex; align-items: center; gap: 0.5rem; }
+
+.phases {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.phase {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.phase.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.phase.todo { opacity: 0.6; }
+
+main { padding: 1rem 1.25rem; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.panel h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+
+fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 1rem; padding: 0.75rem; }
+legend { padding: 0 0.4rem; color: var(--muted); font-size: 0.85rem; }
+
+.row { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.5rem; }
+label { display: flex; flex-direction: column; font-size: 0.8rem; color: var(--muted); gap: 0.2rem; }
+input[type="text"], input[type="search"] {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+input[type="search"] { width: 100%; margin-bottom: 0.5rem; }
+
+.btn {
+  font: inherit;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #f7f7ef;
+  color: var(--ink);
+}
+.btn:hover { background: #efefe0; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+.listbox {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  max-height: 340px;
+  overflow-y: auto;
+  background: #fff;
+}
+.listbox li {
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid #f0f0e0;
+}
+.listbox li:last-child { border-bottom: none; }
+.listbox li.selected { background: var(--sel); }
+.listbox li .meta { color: var(--muted); font-size: 0.8rem; }
+.listbox li .remove {
+  border: none; background: none; cursor: pointer;
+  color: #b00020; font-size: 1rem; line-height: 1; padding: 0 0.25rem;
+}
+.listbox:empty::after { content: "Inga kanotister"; color: var(--muted); display: block; padding: 0.6rem; font-size: 0.85rem; }
+
+.start-list {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.9rem;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0;
+  background: #fffdf3;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.muted { color: var(--accent-ink); opacity: 0.8; font-size: 0.85rem; }
+
+.toast {
+  position: fixed;
+  bottom: 1rem; left: 50%; transform: translateX(-50%);
+  background: #222; color: #fff;
+  padding: 0.5rem 1rem; border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* ---- header logo ---- */
+.brand { display: flex; align-items: center; gap: 0.75rem; }
+.brand img { height: 40px; width: auto; display: block; }
+
+/* ---- phase nav as buttons ---- */
+.phase { cursor: pointer; background: none; font: inherit; }
+.phase:hover { background: rgba(0,0,0,0.05); }
+
+/* ---- screens ---- */
+.screen {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(200px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 1rem;
+  align-items: start;
+}
+/* A class `display` overrides the UA [hidden] rule, so restore it explicitly. */
+.screen[hidden] { display: none; }
+@media (max-width: 900px) { .screen { grid-template-columns: 1fr; } }
+.panel.wide { grid-column: 1 / -1; }
+
+/* ---- start & goal ---- */
+.start-controls { grid-column: 1 / -1; }
+.clock-block { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.clock {
+  font-family: "Courier New", monospace;
+  font-size: 2.5rem;
+  font-weight: bold;
+  min-width: 4ch;
+}
+.btn.big { font-size: 1.5rem; padding: 0.75rem 1.5rem; }
+.btn.big small { display: block; font-size: 0.7rem; font-weight: normal; }
+.btn.goal { background: #2b8a3e; color: #fff; border-color: #2b8a3e; }
+.btn.goal:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.reset { margin-left: auto; align-self: center; color: #b00020; border-color: #e0b4b4; background: #fff; }
+.btn.reset:hover { background: #fbeaea; }
+
+ol.numbered {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: "Courier New", monospace;
+}
+ol.numbered li { padding: 0.15rem 0; display: flex; justify-content: space-between; align-items: center; }
+
+/* ---- tables ---- */
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 0.35rem 0.6rem; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-size: 0.85rem; }
+.match-table select { font: inherit; padding: 0.25rem; }
+
+.number-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.num-btn { font-size: 0.95rem; }
+.number-buttons:empty::after { content: "Alla nummer registrerade"; color: var(--muted); font-size: 0.85rem; }
+.results-table .winner { background: var(--sel); font-weight: 600; }
+
+.warning {
+  background: #fff3cd; border: 1px solid #ffe08a;
+  padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 0.75rem;
+  color: #7a5b00; font-size: 0.9rem;
+}
+
+/* ---- registration: two panels, deltagare shows start + best time ---- */
+#screen-registration { grid-template-columns: minmax(280px, 0.9fr) 1.1fr; }
+@media (max-width: 900px) { #screen-registration { grid-template-columns: 1fr; } }
+
+.participants-table { width: 100%; border-collapse: collapse; }
+.participants-table th, .participants-table td {
+  padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line);
+}
+.participants-table th { color: var(--muted); font-size: 0.8rem; text-align: left; }
+.participants-table .num { color: var(--muted); text-align: right; width: 4ch; }
+.participants-table .start, .participants-table .best {
+  font-family: "Courier New", monospace; text-align: right; width: 6ch;
+}
+.participants-table td:last-child { width: 2ch; text-align: right; }
+.participants-table:empty::after { content: "Inga deltagare"; color: var(--muted); font-size: 0.85rem; }
+
+.remove {
+  border: none; background: none; cursor: pointer;
+  color: #b00020; font-size: 1rem; line-height: 1; padding: 0 0.25rem;
+}
+
+/* ---- step 2 layout: start list uses full page width ---- */
+#screen-start { grid-template-columns: 1fr; }
+
+/* måltider + ordning appear only at the finish, side by side */
+.finish-area {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.finish-area[hidden] { display: none; }
+@media (max-width: 700px) { .finish-area { grid-template-columns: 1fr; } }
+
+/* ---- big readable start list, one line per contestant ---- */
+.run-startlist { font-size: 1.6rem; table-layout: fixed; width: 100%; }
+.run-startlist td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.run-startlist .cd { font-family: "Courier New", monospace; font-weight: bold; width: 7ch; }
+.run-startlist .num { color: var(--muted); width: 6ch; text-align: right; }
+.run-startlist .nm { font-weight: 500; } /* takes remaining width; ellipsis on overflow */
+
+.run-startlist tr.started { color: #b0b0b0; }
+.run-startlist tr.started .cd { color: #c4c4c4; font-weight: normal; }
+.run-startlist tr.upcoming { background: var(--sel); }
+.run-startlist tr.start-now { background: #2b8a3e; color: #fff; }
+.run-startlist tr.start-now td { color: #fff; }
+
+/* ---- finishing mode: shift emphasis to goal stamping ---- */
+#screen-start.finishing .btn.goal {
+  font-size: 2.4rem; padding: 1rem 2.5rem;
+  box-shadow: 0 0 0 4px rgba(43, 138, 62, 0.35);
+}
+#screen-start.finishing .run-startlist-panel { opacity: 0.55; }

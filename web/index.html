@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LöKK OnsdagsRejs</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="img/logo.jpg" alt="Lödde Kanot (LÖKK)" />
+      <h1>LöKK OnsdagsRejs</h1>
+    </div>
+    <div class="bundle-controls">
+      <span id="roster-count" class="muted"></span>
+      <label class="btn">
+        Öppna data…
+        <input type="file" id="import-file" accept="application/json,.json" hidden />
+      </label>
+      <button class="btn" id="export-btn">Spara data</button>
+    </div>
+  </header>
+
+  <!-- Phase flow. Click to switch. -->
+  <nav class="phases" id="phases">
+    <button class="phase" data-screen="registration">Registrering</button>
+    <button class="phase" data-screen="start">Start &amp; Mål</button>
+    <button class="phase" data-screen="match">Matchning</button>
+    <button class="phase" data-screen="results">Resultat</button>
+  </nav>
+
+  <main>
+    <!-- ===================== 1 · REGISTRERING ===================== -->
+    <div class="screen" id="screen-registration">
+      <section class="panel">
+        <h2>Registrering</h2>
+        <fieldset>
+          <legend>Lägg till i loppet</legend>
+          <div class="row">
+            <label>Nummer <input type="text" id="add-number" value="00" size="4" /></label>
+            <button class="btn primary" id="add-existing-btn">Lägg till</button>
+          </div>
+          <input type="search" id="roster-filter" placeholder="Filtrera kanotister…" />
+          <ul class="listbox" id="roster-list" tabindex="0"></ul>
+        </fieldset>
+        <fieldset>
+          <legend>Ny kanotist</legend>
+          <div class="row">
+            <label>Namn <input type="text" id="new-name" placeholder="Namn" /></label>
+            <label>Bästa tid <input type="text" id="new-best" value="50:00" size="6" /></label>
+            <button class="btn" id="add-new-btn">Skapa</button>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="panel">
+        <h2 id="participants-title">Deltagare (0)</h2>
+        <table class="participants-table" id="participants-list"></table>
+      </section>
+    </div>
+
+    <!-- ===================== 2–4 · START & MÅL ===================== -->
+    <div class="screen" id="screen-start" hidden>
+      <section class="panel start-controls">
+        <div class="clock-block">
+          <div class="clock" id="race-clock">00:00</div>
+          <button class="btn big primary" id="start-btn">START!</button>
+          <button class="btn big goal" id="goal-btn" disabled>MÅL!<small>eller tryck M</small></button>
+          <div class="muted" id="goal-count">0 mål</div>
+          <button class="btn reset" id="reset-btn">Nollställ lopp</button>
+        </div>
+      </section>
+
+      <div class="finish-area" id="finish-area" hidden>
+        <section class="panel">
+          <h2>Måltider</h2>
+          <ol class="numbered" id="goal-times"></ol>
+        </section>
+
+        <section class="panel" id="order-panel">
+          <h2>Ordning</h2>
+          <p class="muted">Tryck på numret i den ordning kanotisterna passerar mållinjen.</p>
+          <div class="number-buttons" id="order-buttons"></div>
+          <div class="row">
+            <input type="text" id="order-number" placeholder="Nr" size="4" />
+            <button class="btn" id="order-add-btn">Lägg till</button>
+          </div>
+          <ol class="numbered" id="order-list"></ol>
+          <button class="btn primary" id="to-match-btn">Till matchning →</button>
+        </section>
+      </div>
+
+      <section class="panel run-startlist-panel">
+        <h2>Startlista &amp; nedräkning</h2>
+        <table class="run-startlist" id="run-start-list"></table>
+      </section>
+    </div>
+
+    <!-- ===================== 5 · MATCHNING ===================== -->
+    <div class="screen" id="screen-match" hidden>
+      <section class="panel wide">
+        <h2>Matchning</h2>
+        <p class="muted">
+          Para ihop varje måltid med rätt kanotist. Förifyllt från sekreterarens
+          ordning — justera vid behov, tryck sedan Beräkna.
+        </p>
+        <div id="match-warning" class="warning" hidden></div>
+        <div class="row">
+          <label>Manuell måltid <input type="text" id="match-manual-time" value="14:00" size="6" /></label>
+          <button class="btn" id="match-add-time-btn">Lägg till tid</button>
+        </div>
+        <table class="match-table" id="match-table"></table>
+        <div class="row" style="margin-top:1rem">
+          <button class="btn primary" id="calc-btn">Beräkna resultat →</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== 6 · RESULTAT ===================== -->
+    <div class="screen" id="screen-results" hidden>
+      <section class="panel wide">
+        <h2>Resultat — störst förbättring vinner</h2>
+        <table class="results-table" id="results-table"></table>
+        <div class="row" style="margin-top:1rem">
+          <button class="btn primary" id="finalize-btn">Spara lopp &amp; uppdatera data</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <p id="toast" class="toast" hidden></p>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
