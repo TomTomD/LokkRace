@@ -189,8 +189,16 @@ th { color: var(--muted); font-size: 0.85rem; }
 .number-buttons:empty::after { content: "Alla nummer registrerade"; color: var(--muted); font-size: 0.85rem; }
 .results-table .winner { background: var(--sel); font-weight: 600; }
 
-/* ---- statistics tab (set apart from the numbered race flow) ---- */
-.stats-tab { margin-left: auto; border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+/* ---- auxiliary tabs (set apart from the race flow) ---- */
+.stats-tab, .help-tab { border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.stats-tab { margin-left: auto; } /* pushes stats + help to the far right */
+
+/* ---- help text ---- */
+.help { max-width: 70ch; line-height: 1.5; }
+.help h3 { margin: 1.25rem 0 0.35rem; font-size: 1rem; }
+.help p { margin: 0.35rem 0; }
+.help-steps { margin: 0.5rem 0; padding-left: 1.25rem; }
+.help-steps li { margin-bottom: 0.75rem; }
 
 #screen-stats { grid-template-columns: 1fr 1fr; }
 #screen-stats .wide { grid-column: 1 / -1; }

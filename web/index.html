@@ -29,6 +29,7 @@
     <button class="phase" data-screen="match">Matchning</button>
     <button class="phase" data-screen="results">Resultat</button>
     <button class="phase stats-tab" data-screen="stats">Statistik</button>
+    <button class="phase help-tab" data-screen="help">Hjälp</button>
   </nav>
 
   <main>
@@ -165,6 +166,72 @@
       <section class="panel wide">
         <h2>Snabbaste tider (bästa någonsin)</h2>
         <table class="stat-table" id="stats-fastest"></table>
+      </section>
+    </div>
+
+    <!-- ===================== HJÄLP ===================== -->
+    <div class="screen" id="screen-help" hidden>
+      <section class="panel wide help">
+        <h2>Hjälp — så funkar det</h2>
+        <p>
+          Så här kör du ett LöKK OnsdagsRejs, steg för steg. Flikarna längst upp
+          följer flödet från vänster till höger.
+        </p>
+
+        <h3>Innan loppet — Öppna data</h3>
+        <p>
+          Tryck <strong>Öppna data…</strong> och välj din datafil (JSON) med alla
+          kanotister och deras historik. Har du ingen fil ännu kan du börja lägga
+          till kanotister direkt.
+        </p>
+
+        <ol class="help-steps">
+          <li>
+            <strong>Registrering.</strong> Välj en kanotist i listan och ange
+            startnummer, tryck <em>Lägg till</em>. Ny kanotist? Fyll i namn och
+            bästa tid under <em>Ny kanotist</em>. Varje startnummer måste vara unikt.
+          </li>
+          <li>
+            <strong>Start &amp; Mål.</strong> Tryck <em>START</em> när loppet börjar.
+            Startlistan räknar ner till varje kanotists starttid (grön rad = startar
+            nu, grå = har startat). Tryck <em>MÅL!</em> (eller tangenten <em>M</em>)
+            varje gång någon passerar mållinjen. När alla har startat visas
+            <em>Måltider</em> och <em>Ordning</em>. Låt gärna en sekreterare skriva
+            ner på papper i vilken ordning de tävlande kommer in — då kan du fokusera
+            på målstämplingen. Ordningen knappar du sedan in under <em>Ordning</em>
+            när det finns tid över mellan målgångar.
+          </li>
+          <li>
+            <strong>Matchning.</strong> Para ihop varje måltid med rätt kanotist
+            (förifyllt från ordningen). Saknas en tid kan du lägga till den manuellt.
+            Tryck <em>Beräkna resultat</em>.
+          </li>
+          <li>
+            <strong>Resultat.</strong> Listan visar störst förbättring överst. Tryck
+            <em>Spara lopp &amp; uppdatera data</em> — bästa tider och historik
+            uppdateras och en ny datafil laddas ner. Spara den till nästa gång
+            (och skicka den till Tom).
+          </li>
+        </ol>
+
+        <h3>Nollställ lopp</h3>
+        <p>
+          Vill du börja om? Tryck <strong>Nollställ lopp</strong> på Start &amp; Mål
+          (bekräftas först). Deltagarna behålls, men tid och måltider nollställs.
+        </p>
+
+        <h3>Statistik</h3>
+        <p>
+          Säsongens siffror, antal deltagare per race och individuell statistik per
+          kanotist.
+        </p>
+
+        <h3>Om data &amp; säkerhetskopiering</h3>
+        <p>
+          Allt sparas lokalt i webbläsaren på den här datorn. <strong>Exportera
+          (Spara data) efter varje tävling</strong> — som säkerhetskopia och för att
+          ta med historiken till nästa gång eller en annan dator.
+        </p>
       </section>
     </div>
   </main>

@@ -88,7 +88,7 @@ function importBundle(file) {
 
 // ============================ screen routing ============================
 
-const SCREENS = ["registration", "start", "match", "results", "stats"];
+const SCREENS = ["registration", "start", "match", "results", "stats", "help"];
 
 function showScreen(name) {
   currentScreen = name;
