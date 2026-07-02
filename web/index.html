@@ -28,6 +28,7 @@
     <button class="phase" data-screen="start">Start &amp; Mål</button>
     <button class="phase" data-screen="match">Matchning</button>
     <button class="phase" data-screen="results">Resultat</button>
+    <button class="phase stats-tab" data-screen="stats">Statistik</button>
   </nav>
 
   <main>
@@ -125,6 +126,45 @@
         <div class="row" style="margin-top:1rem">
           <button class="btn primary" id="finalize-btn">Spara lopp &amp; uppdatera data</button>
         </div>
+      </section>
+    </div>
+
+    <!-- ===================== STATISTIK (separate from race flow) ===================== -->
+    <div class="screen" id="screen-stats" hidden>
+      <section class="panel wide">
+        <h2>Statistik</h2>
+        <div class="kpi-row" id="stats-kpis"></div>
+      </section>
+
+      <section class="panel wide">
+        <h2>Starter per säsong</h2>
+        <div class="barchart" id="stats-year-chart"></div>
+      </section>
+
+      <section class="panel wide">
+        <h2 id="stats-perrace-title">Deltagare per race</h2>
+        <div class="barchart" id="stats-perrace-chart"></div>
+      </section>
+
+      <section class="panel wide">
+        <h2>Individuell statistik</h2>
+        <select id="stats-athlete" class="athlete-select"></select>
+        <div id="stats-individual"></div>
+      </section>
+
+      <section class="panel">
+        <h2 id="stats-starts-title">Flest starter</h2>
+        <table class="stat-table" id="stats-most-starts"></table>
+      </section>
+
+      <section class="panel">
+        <h2 id="stats-impr-title">Störst förbättring</h2>
+        <table class="stat-table" id="stats-improvement"></table>
+      </section>
+
+      <section class="panel wide">
+        <h2>Snabbaste tider (bästa någonsin)</h2>
+        <table class="stat-table" id="stats-fastest"></table>
       </section>
     </div>
   </main>

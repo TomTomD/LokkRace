@@ -88,7 +88,7 @@ function importBundle(file) {
 
 // ============================ screen routing ============================
 
-const SCREENS = ["registration", "start", "match", "results"];
+const SCREENS = ["registration", "start", "match", "results", "stats"];
 
 function showScreen(name) {
   currentScreen = name;
@@ -99,6 +99,7 @@ function showScreen(name) {
   if (name === "match") renderMatch();
   if (name === "results") renderResults();
   if (name === "start") { renderRunStartList(); renderGoalLists(); updateFinishMode(); }
+  if (name === "stats") renderStats();
   saveRaceState();
 }
 
@@ -464,6 +465,228 @@ function finalizeRace() {
   renderAll();
 }
 
+// ============================ statistics (separate tab) ============================
+
+function fmtImprovement(seconds) {
+  const sign = seconds >= 0 ? "+" : "−";
+  return sign + getTimeString(Math.abs(seconds));
+}
+
+// "YYYYMMDD-HHMMSS" → "YYYY-MM-DD" / "D/M"
+function fmtRaceDate(stamp) {
+  const s = String(stamp);
+  return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+}
+function fmtRaceShort(stamp) {
+  const s = String(stamp);
+  return `${+s.slice(6, 8)}/${+s.slice(4, 6)}`;
+}
+
+function makeKpi(num, label) {
+  const tile = el("div", null, "kpi");
+  tile.append(el("div", String(num), "num"), el("div", label, "label"));
+  return tile;
+}
+
+// Single-series bar chart. items: [{label, value, title?}]
+function barChart(container, items, emptyText) {
+  container.innerHTML = "";
+  if (!items.length) { container.textContent = emptyText || "Ingen data ännu."; return; }
+  const max = Math.max(1, ...items.map((i) => i.value));
+  for (const it of items) {
+    const col = el("div", null, "bar-col");
+    const track = el("div", null, "bar-track");
+    const bar = el("div", null, "bar");
+    bar.style.height = `${(it.value / max) * 100}%`;
+    bar.title = it.title || `${it.label}: ${it.value}`;
+    track.appendChild(bar);
+    col.append(el("div", String(it.value), "bar-value"), track, el("div", it.label, "bar-label"));
+    container.appendChild(col);
+  }
+}
+
+// Inline SVG line chart of times over races. Faster times sit higher.
+function lineChart(points) {
+  if (!points.length) return null;
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 640, H = 200, padX = 44, padY = 18;
+  const values = points.map((p) => p.value);
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = max - min || 1;
+  const n = points.length;
+  const xAt = (i) => (n === 1 ? W / 2 : padX + (W - 2 * padX) * (i / (n - 1)));
+  const yAt = (v) => padY + (H - 2 * padY) * ((v - min) / span); // min (fastest) at top
+
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("class", "line-chart");
+
+  const line = document.createElementNS(NS, "polyline");
+  line.setAttribute("points", points.map((p, i) => `${xAt(i)},${yAt(p.value)}`).join(" "));
+  line.setAttribute("class", "lc-line");
+  svg.appendChild(line);
+
+  points.forEach((p, i) => {
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", xAt(i));
+    c.setAttribute("cy", yAt(p.value));
+    c.setAttribute("r", "4");
+    c.setAttribute("class", "lc-dot");
+    const t = document.createElementNS(NS, "title");
+    t.textContent = `${p.label}: ${getTimeString(p.value)}`;
+    c.appendChild(t);
+    svg.appendChild(c);
+  });
+
+  // fastest / slowest reference labels
+  const label = (v, y) => {
+    const txt = document.createElementNS(NS, "text");
+    txt.setAttribute("x", padX - 8);
+    txt.setAttribute("y", y + 4);
+    txt.setAttribute("text-anchor", "end");
+    txt.setAttribute("class", "lc-axis");
+    txt.textContent = getTimeString(v);
+    svg.appendChild(txt);
+  };
+  label(min, padY);
+  label(max, H - padY);
+  return svg;
+}
+
+function statTable(table, headers, rows, emptyText) {
+  table.innerHTML = "";
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    const td = el("td", emptyText || "Ingen data");
+    td.colSpan = headers.length;
+    td.style.color = "var(--muted)";
+    tr.appendChild(td);
+    table.appendChild(tr);
+    return;
+  }
+  const head = document.createElement("tr");
+  headers.forEach((h) => head.appendChild(el("th", h)));
+  table.appendChild(head);
+  for (const cells of rows) {
+    const tr = document.createElement("tr");
+    cells.forEach((c) => tr.appendChild(el("td", c)));
+    table.appendChild(tr);
+  }
+}
+
+// All stats are computed from the roster's race_history (the season record).
+function renderStats() {
+  const year = new Date().getFullYear();
+  const yearStr = String(year);
+
+  const raceStamps = new Set();
+  const startsByYear = {};
+  let totalStarts = 0;
+  for (const p of roster) {
+    for (const h of p.race_history) {
+      raceStamps.add(h.race);
+      totalStarts += 1;
+      const y = String(h.race).slice(0, 4);
+      startsByYear[y] = (startsByYear[y] || 0) + 1;
+    }
+  }
+  const seasonRaces = [...raceStamps].filter((s) => String(s).startsWith(yearStr)).length;
+  const seasonStarts = startsByYear[yearStr] || 0;
+
+  // --- KPI tiles ---
+  const kpis = $("stats-kpis");
+  kpis.innerHTML = "";
+  [
+    [roster.length, "Kanotister"],
+    [raceStamps.size, "Race totalt"],
+    [totalStarts, "Starter totalt"],
+    [seasonRaces, `Race ${year}`],
+    [seasonStarts, `Starter ${year}`],
+  ].forEach(([num, label]) => kpis.appendChild(makeKpi(num, label)));
+
+  // --- starts per season ---
+  const years = Object.keys(startsByYear).sort();
+  barChart($("stats-year-chart"), years.map((y) => ({ label: y, value: startsByYear[y] })));
+
+  // --- competitors per race this year ---
+  const perRace = {};
+  for (const p of roster) {
+    for (const h of p.race_history) {
+      if (String(h.race).startsWith(yearStr)) perRace[h.race] = (perRace[h.race] || 0) + 1;
+    }
+  }
+  $("stats-perrace-title").textContent = `Deltagare per race ${year}`;
+  const raceKeys = Object.keys(perRace).sort();
+  barChart($("stats-perrace-chart"),
+    raceKeys.map((s) => ({ label: fmtRaceShort(s), value: perRace[s], title: `${fmtRaceDate(s)}: ${perRace[s]} deltagare` })),
+    `Inga race ${year} ännu.`);
+
+  // --- individual athlete selector ---
+  const sel = $("stats-athlete");
+  const prev = sel.value;
+  sel.innerHTML = "";
+  sel.appendChild(new Option("(välj kanotist)", ""));
+  for (const p of [...roster].sort((a, b) => a.name.localeCompare(b.name, "sv"))) {
+    sel.appendChild(new Option(p.name, p.name));
+  }
+  sel.value = prev;
+  renderIndividual(sel.value);
+
+  // --- season leaderboards ---
+  const seasonResults = roster.map((p) => p.getReport(year).seasonResult).filter(Boolean);
+  $("stats-starts-title").textContent = `Flest starter ${year}`;
+  $("stats-impr-title").textContent = `Störst förbättring ${year}`;
+
+  const byStarts = [...seasonResults].sort((a, b) => b.count - a.count).slice(0, 10);
+  statTable($("stats-most-starts"), ["Namn", "Starter"],
+    byStarts.map((r) => [r.name, String(r.count)]), "Inga starter i år");
+
+  const byImpr = [...seasonResults].sort((a, b) => b.improvement - a.improvement).slice(0, 10);
+  statTable($("stats-improvement"), ["Namn", "Förbättring"],
+    byImpr.map((r) => [r.name, fmtImprovement(r.improvement)]), "Inga resultat i år");
+
+  // --- fastest ever (best times among racers with history) ---
+  const fastest = roster
+    .filter((p) => p.race_history.length)
+    .sort((a, b) => a.best_time_seconds - b.best_time_seconds)
+    .slice(0, 10);
+  statTable($("stats-fastest"), ["#", "Namn", "Bästa tid"],
+    fastest.map((p, i) => [String(i + 1), p.name, getTimeString(p.best_time_seconds)]));
+}
+
+function renderIndividual(name) {
+  const box = $("stats-individual");
+  box.innerHTML = "";
+  const p = name ? rosterEntry(name) : null;
+  if (!p) { box.textContent = "Välj en kanotist ovan."; return; }
+
+  const year = new Date().getFullYear();
+  const { seasonResult } = p.getReport(year);
+
+  const kpiRow = el("div", null, "kpi-row");
+  kpiRow.append(
+    makeKpi(getTimeString(p.best_time_seconds), "Bästa tid"),
+    makeKpi(p.race_history.length, "Antal race"),
+    makeKpi(seasonResult ? seasonResult.count : 0, `Race ${year}`),
+    makeKpi(seasonResult ? fmtImprovement(seasonResult.improvement) : "—", `Förbättring ${year}`),
+  );
+  box.appendChild(kpiRow);
+
+  const chrono = [...p.race_history].sort((a, b) => String(a.race).localeCompare(String(b.race)));
+  const svg = lineChart(chrono.map((h) => ({ label: fmtRaceDate(h.race), value: h.time_seconds })));
+  if (svg) {
+    const wrap = el("div", null, "line-wrap");
+    wrap.appendChild(svg);
+    box.appendChild(wrap);
+  }
+
+  const table = el("table", null, "stat-table");
+  const recent = [...p.race_history].sort((a, b) => String(b.race).localeCompare(String(a.race)));
+  statTable(table, ["Datum", "Tid"],
+    recent.map((h) => [fmtRaceDate(h.race), getTimeString(h.time_seconds)]), "Inga race");
+  box.appendChild(table);
+}
+
 // ============================ helpers ============================
 
 function el(tag, text, className) {
@@ -552,6 +775,8 @@ $("finalize-btn").addEventListener("click", finalizeRace);
 for (const btn of document.querySelectorAll(".phase")) {
   btn.addEventListener("click", () => showScreen(btn.dataset.screen));
 }
+
+$("stats-athlete").addEventListener("change", (e) => renderIndividual(e.target.value));
 
 // Press M for MÅL while on the start screen (mirrors the desktop app).
 document.addEventListener("keydown", (e) => {
