@@ -45,7 +45,14 @@ export class Participant {
   }
 
   storeRace(raceString) {
-    this.race_history.push({ race: raceString, time_seconds: this.race_time_seconds });
+    // Store number + improvement too so past results can be reconstructed later
+    // (older/migrated entries only have race + time_seconds).
+    this.race_history.push({
+      race: raceString,
+      time_seconds: this.race_time_seconds,
+      number: this.number,
+      improvement: this.race_improvement_seconds,
+    });
   }
 
   // Season report: total string + a summary object (or null if no season data),

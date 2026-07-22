@@ -188,6 +188,8 @@ th { color: var(--muted); font-size: 0.85rem; }
 .num-btn { font-size: 0.95rem; }
 .number-buttons:empty::after { content: "Alla nummer registrerade"; color: var(--muted); font-size: 0.85rem; }
 .results-table .winner { background: var(--sel); font-weight: 600; }
+.results-picker { display: inline-flex; flex-direction: row; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--muted); font-size: 0.85rem; }
+.results-picker select { font: inherit; padding: 0.35rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; }
 
 /* ---- auxiliary tabs (set apart from the race flow) ---- */
 .stats-tab, .help-tab { border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }

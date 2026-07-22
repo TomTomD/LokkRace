@@ -218,6 +218,7 @@ function resetRace() {
   if (!confirm("Nollställa loppet? Tiden och alla måltider raderas. Deltagarna behålls.")) return;
   race.resetTiming();
   finishOrder = [];
+  matchState = [];
   updateStartControls();
   saveRaceState();
   renderClock();
@@ -416,60 +417,140 @@ function calcResults() {
   race.assignResults(matchSelections());
   saveRaceState();
   showScreen("results");
+  // Always land on the current (unsaved) race, even if a past race was last viewed.
+  $("results-race").value = "__live__";
+  renderResultsTable("__live__");
 }
 
 // ============================ results (6) ============================
 
+// Results rows for the current, unsaved race (live).
+function liveResults() {
+  return race.participants
+    .filter((p) => p.race_finish_time_seconds > 0)
+    .map((p) => ({
+      number: p.number,
+      name: p.name,
+      time: p.race_time_seconds,
+      // No prior races → first-timer (improvement is meaningless): mark as "Ny".
+      improvement: p.race_history.length ? p.race_improvement_seconds : null,
+    }));
+}
+
+// All saved race stamps, most recent first.
+function allRaceStamps() {
+  const set = new Set();
+  for (const p of roster) for (const h of p.race_history) set.add(h.race);
+  return [...set].sort().reverse();
+}
+
+// Reconstruct a saved race's results from history. Improvement is computed as
+// the athlete's best time *before* this race minus their time in it — so it
+// works for migrated data too (which never stored an improvement figure). An
+// athlete's first-ever race has nothing to improve against → null.
+function resultsForStamp(stamp) {
+  const key = String(stamp);
+  const rows = [];
+  for (const p of roster) {
+    const h = p.race_history.find((e) => e.race === stamp);
+    if (!h) continue;
+    let prevBest = null;
+    for (const e of p.race_history) {
+      if (String(e.race) < key && (prevBest == null || e.time_seconds < prevBest)) {
+        prevBest = e.time_seconds;
+      }
+    }
+    rows.push({
+      number: h.number != null ? h.number : "",
+      name: p.name,
+      time: h.time_seconds,
+      improvement: prevBest != null ? prevBest - h.time_seconds : null,
+    });
+  }
+  return rows;
+}
+
+// Rank by improvement when known (the winner), else by time (older data).
+function sortResults(rows) {
+  const hasImpr = rows.some((r) => r.improvement != null);
+  if (hasImpr) rows.sort((a, b) => (b.improvement ?? -Infinity) - (a.improvement ?? -Infinity));
+  else rows.sort((a, b) => a.time - b.time);
+  return rows;
+}
+
 function renderResults() {
+  const sel = $("results-race");
+  const prev = sel.value;
+  const stamps = allRaceStamps();
+  const hasLive = liveResults().length > 0;
+
+  sel.innerHTML = "";
+  if (hasLive) sel.appendChild(new Option("Nuvarande lopp (osparat)", "__live__"));
+  for (const s of stamps) sel.appendChild(new Option(fmtRaceDate(s), s));
+
+  // Keep the previous selection if still valid, else default to live / latest.
+  let value = [...sel.options].some((o) => o.value === prev) ? prev
+    : (hasLive ? "__live__" : (stamps[0] || ""));
+  sel.value = value;
+  renderResultsTable(value);
+}
+
+function renderResultsTable(which) {
+  const rows = which === "__live__" ? liveResults()
+    : which ? resultsForStamp(which) : [];
+  sortResults(rows);
+
+  // "Spara lopp" only applies to the live, unsaved race.
+  $("finalize-btn").hidden = which !== "__live__";
+
   const table = $("results-table");
   table.innerHTML = "";
   const head = document.createElement("tr");
-  ["#", "Nr", "Namn", "Bästa", "Tid", "Förbättring"].forEach((h) => head.appendChild(el("th", h)));
+  ["#", "Nr", "Namn", "Tid", "Förbättring"].forEach((h) => head.appendChild(el("th", h)));
   table.appendChild(head);
 
-  const finishers = race.participants.filter((p) => p.race_finish_time_seconds > 0);
-  finishers.forEach((p, i) => {
+  rows.forEach((r, i) => {
     const tr = document.createElement("tr");
     if (i === 0) tr.className = "winner";
     tr.append(
       el("td", String(i + 1)),
-      el("td", String(p.number)),
-      el("td", p.name),
-      el("td", getTimeString(p.best_time_seconds)),
-      el("td", getTimeString(p.race_time_seconds)),
-      el("td", getTimeString(p.race_improvement_seconds)),
+      el("td", String(r.number)),
+      el("td", r.name),
+      el("td", getTimeString(r.time)),
+      el("td", r.improvement == null ? "Ny" : fmtImprovement(r.improvement)),
     );
     table.appendChild(tr);
   });
-  if (!finishers.length) {
+  if (!rows.length) {
     const tr = document.createElement("tr");
-    const td = el("td", "Inga resultat ännu — gör matchningen först.");
-    td.colSpan = 6;
+    const td = el("td", "Inga resultat att visa.");
+    td.colSpan = 5;
     tr.appendChild(td);
     table.appendChild(tr);
   }
 }
 
 function finalizeRace() {
-  const finishers = race.participants.filter((p) => p.race_finish_time_seconds > 0);
-  if (!finishers.length) return toast("Inga resultat att spara");
+  if (!liveResults().length) return toast("Inga resultat att spara");
   race.finalize();      // folds best times + appends race_history onto roster objects
   saveRoster();         // persist the updated bundle
   exportBundle();       // hand the organizer the updated data file
-  // Start a fresh race, keep the roster.
+  // Start a fresh race, keep the roster. The just-saved race stays visible below
+  // because Resultat now reads from history (defaults to the most recent race).
   race = new Race();
   finishOrder = [];
+  matchState = [];
   localStorage.removeItem(RACE_KEY);
   toast("Loppet sparat i data");
-  showScreen("registration");
   renderAll();
+  showScreen("results");
 }
 
 // ============================ statistics (separate tab) ============================
 
+// Only positive improvements are shown; no improvement (zero or slower) is "—".
 function fmtImprovement(seconds) {
-  const sign = seconds >= 0 ? "+" : "−";
-  return sign + getTimeString(Math.abs(seconds));
+  return seconds > 0 ? "+" + getTimeString(seconds) : "—";
 }
 
 // "YYYYMMDD-HHMMSS" → "YYYY-MM-DD" / "D/M"
@@ -777,6 +858,7 @@ for (const btn of document.querySelectorAll(".phase")) {
 }
 
 $("stats-athlete").addEventListener("change", (e) => renderIndividual(e.target.value));
+$("results-race").addEventListener("change", (e) => renderResultsTable(e.target.value));
 
 // Press M for MÅL while on the start screen (mirrors the desktop app).
 document.addEventListener("keydown", (e) => {
