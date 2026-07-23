@@ -19,6 +19,7 @@ let race = new Race();
 let finishOrder = [];     // bib-number strings, in crossing order
 let matchState = [];      // matching screen: selected name per crossing (or null)
 let currentScreen = "registration";
+let passphrase = null;    // remembered for the session; encrypts/decrypts the data file
 
 const $ = (id) => document.getElementById(id);
 
@@ -52,38 +53,147 @@ function loadRaceState() {
   } catch { /* ignore corrupt state */ }
 }
 
-function exportBundle() {
+// ---- passphrase-based encryption of the shareable file (Web Crypto) ----
+// The file at rest/in transit is protected; localStorage on this device is not.
+// Ciphertext is safe to host publicly — access = whoever has the passphrase.
+
+const PBKDF2_ITERATIONS = 200000;
+
+function bufToB64(buf) {
+  const bytes = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+function b64ToBuf(b64) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+async function deriveKey(pass, salt, iterations) {
+  const baseKey = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false, ["encrypt", "decrypt"]);
+}
+
+async function encryptBundle(bundle, pass) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(pass, salt, PBKDF2_ITERATIONS);
+  const ct = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(bundle)));
+  return {
+    lokkrace_encrypted: 1,
+    kdf: "PBKDF2-SHA256",
+    iterations: PBKDF2_ITERATIONS,
+    salt: bufToB64(salt),
+    iv: bufToB64(iv),
+    ciphertext: bufToB64(ct),
+  };
+}
+
+async function decryptContainer(container, pass) {
+  const key = await deriveKey(pass, b64ToBuf(container.salt), container.iterations || PBKDF2_ITERATIONS);
+  const pt = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64ToBuf(container.iv) }, key, b64ToBuf(container.ciphertext));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+// Ask for (and confirm) a new passphrase when none is set for this session.
+function promptNewPassphrase() {
+  const a = window.prompt("Välj ett lösenord för att skydda datafilen (dela det med behöriga):");
+  if (a == null) return null;
+  if (a.length < 4) { toast("Lösenordet är för kort"); return null; }
+  const b = window.prompt("Bekräfta lösenordet:");
+  if (b == null) return null;
+  if (a !== b) { toast("Lösenorden matchar inte"); return null; }
+  return a;
+}
+
+async function exportBundle() {
   const bundle = { version: BUNDLE_VERSION, participants: roster.map((p) => p.toJSON()) };
-  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+  if (!passphrase) {
+    const p = promptNewPassphrase();
+    if (p == null) return;
+    passphrase = p;
+  }
+  let container;
+  try {
+    container = await encryptBundle(bundle, passphrase);
+  } catch (e) {
+    toast("Kunde inte kryptera: " + e.message);
+    return;
+  }
+  const blob = new Blob([JSON.stringify(container)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = `lokkrace-data-${formatRaceStamp(new Date())}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast("Data sparad till fil");
+  toast("Krypterad data sparad till fil");
 }
 
-function importBundle(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const bundle = JSON.parse(reader.result);
-      if (!Array.isArray(bundle?.participants)) throw new Error("fel format");
-      // Clear all current in-memory data before loading the new bundle.
-      roster = bundle.participants.map(Participant.fromJSON);
-      roster.sort((a, b) => a.name.localeCompare(b.name, "sv"));
-      race = new Race();
-      finishOrder = [];
-      selectedName = null;
-      localStorage.removeItem(RACE_KEY);
-      saveRoster();
-      showScreen("registration");
-      renderAll();
-      toast(`Öppnade ${roster.length} kanotister`);
-    } catch (e) { toast("Kunde inte läsa filen: " + e.message); }
-  };
-  reader.readAsText(file);
+async function importBundle(file) {
+  await importText(await file.text());
+}
+
+// Normalise common share links to their raw/direct form.
+function normalizeUrl(url) {
+  const gh = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+)$/);
+  if (gh) return `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/${gh[3]}`;
+  if (url.includes("dropbox.com")) return url.replace(/([?&])dl=0/, "$1dl=1");
+  return url;
+}
+
+async function importFromUrl(url) {
+  let resp;
+  try {
+    resp = await fetch(normalizeUrl(url));
+  } catch (e) {
+    toast("Kunde inte hämta (nätverk eller CORS): " + e.message);
+    return;
+  }
+  if (!resp.ok) { toast(`Hämtning misslyckades: ${resp.status}`); return; }
+  await importText(await resp.text());
+}
+
+async function importText(text) {
+  try {
+    let data = JSON.parse(text);
+    if (data && data.lokkrace_encrypted) {
+      const pass = passphrase || window.prompt("Ange lösenord för datafilen:");
+      if (pass == null) return;
+      try {
+        data = await decryptContainer(data, pass);
+        passphrase = pass; // remember for this session (reused when saving)
+      } catch {
+        toast("Fel lösenord eller skadad fil");
+        return;
+      }
+    }
+    if (!Array.isArray(data?.participants)) throw new Error("fel format");
+    // Clear all current in-memory data before loading the new bundle.
+    roster = data.participants.map(Participant.fromJSON);
+    roster.sort((a, b) => a.name.localeCompare(b.name, "sv"));
+    race = new Race();
+    finishOrder = [];
+    matchState = [];
+    selectedName = null;
+    localStorage.removeItem(RACE_KEY);
+    saveRoster();
+    showScreen("registration");
+    renderAll();
+    toast(`Öppnade ${roster.length} kanotister`);
+  } catch (e) {
+    toast("Kunde inte läsa filen: " + e.message);
+  }
 }
 
 // ============================ screen routing ============================
@@ -530,11 +640,11 @@ function renderResultsTable(which) {
   }
 }
 
-function finalizeRace() {
+async function finalizeRace() {
   if (!liveResults().length) return toast("Inga resultat att spara");
   race.finalize();      // folds best times + appends race_history onto roster objects
   saveRoster();         // persist the updated bundle
-  exportBundle();       // hand the organizer the updated data file
+  await exportBundle(); // hand the organizer the updated (encrypted) data file
   // Start a fresh race, keep the roster. The just-saved race stays visible below
   // because Resultat now reads from history (defaults to the most recent race).
   race = new Race();
@@ -826,16 +936,26 @@ $("add-new-btn").addEventListener("click", () => {
 
 $("roster-filter").addEventListener("input", renderRoster);
 $("export-btn").addEventListener("click", exportBundle);
+function raceInProgressGuard() {
+  return !(race.participants.length || race.start_time) ||
+    confirm("Det finns ett pågående lopp. Öppna ny data och rensa det?");
+}
+
 $("import-file").addEventListener("change", (e) => {
   const file = e.target.files[0];
   e.target.value = "";
   if (!file) return;
-  // Guard against wiping an unsaved race in progress.
-  if ((race.participants.length || race.start_time) &&
-      !confirm("Det finns ett pågående lopp. Öppna ny data och rensa det?")) {
-    return;
-  }
+  if (!raceInProgressGuard()) return;
   importBundle(file);
+});
+
+$("import-url-btn").addEventListener("click", () => {
+  if (!raceInProgressGuard()) return;
+  const last = localStorage.getItem("lokkrace.lasturl") || "https://";
+  const url = window.prompt("Klistra in https-länk till datafilen:", last);
+  if (!url) return;
+  localStorage.setItem("lokkrace.lasturl", url);
+  importFromUrl(url);
 });
 
 $("start-btn").addEventListener("click", startRace);

@@ -61,12 +61,29 @@ are computed from, so loading last week's bundle carries the season forward.
       "best_time_seconds": 900,
       "number": 14,
       "race_history": [
-        { "race": "20260603-180000", "time_seconds": 905 }
+        { "race": "20260603-180000", "time_seconds": 905, "number": 14, "improvement": 5 }
       ]
     }
   ]
 }
 ```
+
+## Encryption (the shared file is passphrase-protected)
+
+Exported files are **encrypted** with a passphrase (AES-GCM, key derived via
+PBKDF2 using the browser's Web Crypto API) — the JSON above is the *decrypted*
+content. On disk an exported file looks like
+`{ "lokkrace_encrypted": 1, "salt": …, "iv": …, "ciphertext": … }`.
+
+- **Öppna data** asks for the passphrase and decrypts in the browser; the wrong
+  passphrase simply can't open it. **Spara data** re-encrypts with the same
+  passphrase.
+- Because the file is ciphertext, it's safe to host/share anywhere (Drive, a
+  public link, email) — **access = whoever has the passphrase**. It's a single
+  shared passphrase (no per-user accounts); to revoke access, change it and
+  re-share the file.
+- `localStorage` on the operator's own device is *not* encrypted (trusted device).
+- Plaintext bundles (e.g. the migration output below) still import fine.
 
 ## Migrating from the desktop app
 
