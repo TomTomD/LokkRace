@@ -134,7 +134,7 @@ async function exportBundle() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `lokkrace-data-${formatRaceStamp(new Date())}.json`;
+  a.download = `lokkrace-data-${formatRaceStamp(new Date())}.lokk`;
   a.click();
   URL.revokeObjectURL(url);
   toast("Krypterad data sparad till fil");

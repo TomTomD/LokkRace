@@ -72,8 +72,9 @@ are computed from, so loading last week's bundle carries the season forward.
 
 Exported files are **encrypted** with a passphrase (AES-GCM, key derived via
 PBKDF2 using the browser's Web Crypto API) — the JSON above is the *decrypted*
-content. On disk an exported file looks like
-`{ "lokkrace_encrypted": 1, "salt": …, "iv": …, "ciphertext": … }`.
+content. Encrypted exports use the `.lokk` extension and look like
+`{ "lokkrace_encrypted": 1, "salt": …, "iv": …, "ciphertext": … }` (still JSON
+inside). Plaintext `.json` files (e.g. the migration output) also import fine.
 
 - **Öppna data** asks for the passphrase and decrypts in the browser; the wrong
   passphrase simply can't open it. **Exportera data** re-encrypts with the same
