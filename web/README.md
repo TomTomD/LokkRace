@@ -76,7 +76,7 @@ content. On disk an exported file looks like
 `{ "lokkrace_encrypted": 1, "salt": …, "iv": …, "ciphertext": … }`.
 
 - **Öppna data** asks for the passphrase and decrypts in the browser; the wrong
-  passphrase simply can't open it. **Spara data** re-encrypts with the same
+  passphrase simply can't open it. **Exportera data** re-encrypts with the same
   passphrase.
 - Because the file is ciphertext, it's safe to host/share anywhere (Drive, a
   public link, email) — **access = whoever has the passphrase**. It's a single

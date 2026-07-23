@@ -547,6 +547,13 @@ function liveResults() {
     }));
 }
 
+// A run has been started/stamped/computed but not yet folded into history.
+function hasUnsavedRace() {
+  return race.start_time != null
+    || race.goal_time_list_seconds.length > 0
+    || race.participants.some((p) => p.race_finish_time_seconds > 0);
+}
+
 // All saved race stamps, most recent first.
 function allRaceStamps() {
   const set = new Set();
@@ -641,7 +648,21 @@ function renderResultsTable(which) {
 }
 
 async function finalizeRace() {
-  if (!liveResults().length) return toast("Inga resultat att spara");
+  const finishers = liveResults().length;
+  if (!finishers) return toast("Inga resultat att spara");
+
+  // Catch a missed MÅL press or an unassigned crossing before it's lost.
+  const registered = race.participants.length;
+  const unmatchedTimes = race.goal_time_list_seconds.length - finishers;
+  const missingResults = registered - finishers;
+  if (unmatchedTimes > 0 || missingResults > 0) {
+    let msg = "Kontrollera innan du sparar:\n";
+    if (missingResults > 0) msg += `• ${missingResults} deltagare saknar resultat.\n`;
+    if (unmatchedTimes > 0) msg += `• ${unmatchedTimes} måltider är inte matchade.\n`;
+    msg += "\nSpara ändå?";
+    if (!confirm(msg)) return;
+  }
+
   race.finalize();      // folds best times + appends race_history onto roster objects
   saveRoster();         // persist the updated bundle
   await exportBundle(); // hand the organizer the updated (encrypted) data file
@@ -935,7 +956,15 @@ $("add-new-btn").addEventListener("click", () => {
 });
 
 $("roster-filter").addEventListener("input", renderRoster);
-$("export-btn").addEventListener("click", exportBundle);
+$("export-btn").addEventListener("click", () => {
+  // Guard against exporting while a run hasn't been saved via "Spara lopp".
+  if (hasUnsavedRace() &&
+      !confirm("Det finns ett pågående lopp som inte sparats via \"Spara lopp & uppdatera data\". " +
+               "Exporterar du nu tas resultatet inte med. Exportera ändå?")) {
+    return;
+  }
+  exportBundle();
+});
 function raceInProgressGuard() {
   return !(race.participants.length || race.start_time) ||
     confirm("Det finns ett pågående lopp. Öppna ny data och rensa det?");
