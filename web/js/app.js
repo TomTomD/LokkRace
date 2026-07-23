@@ -12,6 +12,9 @@ import { Participant, Race, getTimeString, parseTimeString, formatRaceStamp } fr
 const STORE_KEY = "lokkrace.bundle.v1";
 const RACE_KEY = "lokkrace.race.v1";
 const BUNDLE_VERSION = 1;
+// Default data file offered in "Öppna länk" — the club's published bundle.
+const DEFAULT_DATA_URL =
+  "https://raw.githubusercontent.com/TomTomD/LokkRaceData/main/lokkrace-data-latest.lokk";
 
 let roster = [];          // Participant[]
 let selectedName = null;
@@ -980,8 +983,8 @@ $("import-file").addEventListener("change", (e) => {
 
 $("import-url-btn").addEventListener("click", () => {
   if (!raceInProgressGuard()) return;
-  const last = localStorage.getItem("lokkrace.lasturl") || "https://";
-  const url = window.prompt("Klistra in https-länk till datafilen:", last);
+  const last = localStorage.getItem("lokkrace.lasturl") || DEFAULT_DATA_URL;
+  const url = window.prompt("Länk till datafilen (tryck OK för standard):", last);
   if (!url) return;
   localStorage.setItem("lokkrace.lasturl", url);
   importFromUrl(url);
