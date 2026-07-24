@@ -12,9 +12,11 @@ import { Participant, Race, getTimeString, parseTimeString, formatRaceStamp } fr
 const STORE_KEY = "lokkrace.bundle.v1";
 const RACE_KEY = "lokkrace.race.v1";
 const BUNDLE_VERSION = 1;
-// Default data file offered in "Öppna länk" — the club's published bundle.
+// Default data file offered by "Hämta data" — the club's published bundle.
 const DEFAULT_DATA_URL =
   "https://raw.githubusercontent.com/TomTomD/LokkRaceData/main/lokkrace-data-latest.lokk";
+const TOUCHED_KEY = "lokkrace.datatouched";
+const STALE_MS = 6 * 24 * 60 * 60 * 1000; // remind if data is older than 6 days
 
 let roster = [];          // Participant[]
 let selectedName = null;
@@ -191,12 +193,57 @@ async function importText(text) {
     selectedName = null;
     localStorage.removeItem(RACE_KEY);
     saveRoster();
+    markDataTouched(); // fetching/opening dismisses the stale reminder
     showScreen("registration");
     renderAll();
     toast(`Öppnade ${roster.length} kanotister`);
   } catch (e) {
     toast("Kunde inte läsa filen: " + e.message);
   }
+}
+
+// ---- fetching, clearing, and the stale-data reminder ----
+
+function markDataTouched() {
+  localStorage.setItem(TOUCHED_KEY, String(Date.now()));
+}
+
+function dataIsStale() {
+  const t = Number(localStorage.getItem(TOUCHED_KEY));
+  if (!t) return true; // never fetched/opened via this app → encourage a fetch
+  return Date.now() - t > STALE_MS;
+}
+
+function updateStaleReminder() {
+  $("stale-reminder").hidden = !dataIsStale();
+}
+
+// Prompt for the data URL (default pre-filled) and fetch it.
+function promptFetchData() {
+  if (!raceInProgressGuard()) return;
+  const last = localStorage.getItem("lokkrace.lasturl") || DEFAULT_DATA_URL;
+  const url = window.prompt("Länk till datafilen (tryck OK för standard):", last);
+  if (!url) return;
+  localStorage.setItem("lokkrace.lasturl", url);
+  importFromUrl(url);
+}
+
+// Wipe all local data on this device.
+function clearData() {
+  roster = [];
+  race = new Race();
+  finishOrder = [];
+  matchState = [];
+  selectedName = null;
+  passphrase = null;
+  localStorage.removeItem(STORE_KEY);
+  localStorage.removeItem(RACE_KEY);
+  markDataTouched(); // a deliberate reset dismisses the reminder
+  updateStartControls();
+  renderAll();
+  showScreen("registration");
+  updateStaleReminder();
+  toast("Data rensad");
 }
 
 // ============================ screen routing ============================
@@ -213,6 +260,7 @@ function showScreen(name) {
   if (name === "results") renderResults();
   if (name === "start") { renderRunStartList(); renderGoalLists(); updateFinishMode(); }
   if (name === "stats") renderStats();
+  if (name === "registration") updateStaleReminder();
   saveRaceState();
 }
 
@@ -976,18 +1024,33 @@ function raceInProgressGuard() {
 $("import-file").addEventListener("change", (e) => {
   const file = e.target.files[0];
   e.target.value = "";
+  $("menu-panel").hidden = true;
   if (!file) return;
   if (!raceInProgressGuard()) return;
   importBundle(file);
 });
 
-$("import-url-btn").addEventListener("click", () => {
-  if (!raceInProgressGuard()) return;
-  const last = localStorage.getItem("lokkrace.lasturl") || DEFAULT_DATA_URL;
-  const url = window.prompt("Länk till datafilen (tryck OK för standard):", last);
-  if (!url) return;
-  localStorage.setItem("lokkrace.lasturl", url);
-  importFromUrl(url);
+$("import-url-btn").addEventListener("click", promptFetchData);
+$("reminder-fetch").addEventListener("click", promptFetchData);
+
+// Overflow menu (Öppna fil… / Rensa data)
+$("menu-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const panel = $("menu-panel");
+  panel.hidden = !panel.hidden;
+  $("menu-btn").setAttribute("aria-expanded", String(!panel.hidden));
+});
+$("menu-panel").addEventListener("click", (e) => e.stopPropagation());
+document.addEventListener("click", () => {
+  $("menu-panel").hidden = true;
+  $("menu-btn").setAttribute("aria-expanded", "false");
+});
+
+$("clear-btn").addEventListener("click", () => {
+  $("menu-panel").hidden = true;
+  if (!confirm("Rensa all data på den här datorn (kanotister och pågående lopp)? " +
+               "Detta går inte att ångra.")) return;
+  clearData();
 });
 
 $("start-btn").addEventListener("click", startRace);
@@ -1034,3 +1097,4 @@ roster = loadRoster();
 loadRaceState();
 renderAll();
 showScreen(currentScreen);
+updateStaleReminder();

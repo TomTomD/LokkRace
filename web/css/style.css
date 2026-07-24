@@ -31,6 +31,32 @@ header {
 header h1 { margin: 0; font-size: 1.4rem; }
 .bundle-controls { display: flex; align-items: center; gap: 0.5rem; }
 
+/* ---- overflow menu (Öppna fil… / Rensa data) ---- */
+.menu { position: relative; display: inline-block; }
+.menu-btn { font-weight: 700; line-height: 1; }
+.menu-panel {
+  position: absolute; right: 0; top: calc(100% + 4px);
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  min-width: 160px; z-index: 30; display: flex; flex-direction: column; overflow: hidden;
+}
+.menu-panel[hidden] { display: none; }
+.menu-item {
+  text-align: left; padding: 0.55rem 0.8rem; background: none; border: none;
+  cursor: pointer; font: inherit; color: var(--ink); width: 100%;
+}
+.menu-item:hover { background: #f0f0e0; }
+.menu-item.danger { color: #b00020; }
+
+/* ---- stale-data reminder on Registrering ---- */
+.reminder {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  background: #fff3cd; border: 1px solid #ffe08a; color: #7a5b00;
+  padding: 0.6rem 0.9rem; border-radius: 6px;
+}
+.reminder[hidden] { display: none; }
+
 .phases {
   display: flex;
   gap: 0.5rem;

@@ -14,12 +14,18 @@
     </div>
     <div class="bundle-controls">
       <span id="roster-count" class="muted"></span>
-      <label class="btn">
-        Öppna data…
-        <input type="file" id="import-file" accept=".lokk,.json,application/json" hidden />
-      </label>
-      <button class="btn" id="import-url-btn">Öppna länk…</button>
+      <button class="btn" id="import-url-btn">Hämta data</button>
       <button class="btn" id="export-btn">Exportera data</button>
+      <div class="menu">
+        <button class="btn menu-btn" id="menu-btn" title="Mer" aria-haspopup="true" aria-expanded="false">⋯</button>
+        <div class="menu-panel" id="menu-panel" hidden>
+          <label class="menu-item">
+            Öppna fil…
+            <input type="file" id="import-file" accept=".lokk,.json,application/json" hidden />
+          </label>
+          <button class="menu-item danger" id="clear-btn">Rensa data</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -36,6 +42,10 @@
   <main>
     <!-- ===================== 1 · REGISTRERING ===================== -->
     <div class="screen" id="screen-registration">
+      <div class="reminder" id="stale-reminder" hidden>
+        <span>Det var ett tag sedan data hämtades — hämta gärna senaste versionen.</span>
+        <button class="btn" id="reminder-fetch">Hämta data</button>
+      </div>
       <section class="panel">
         <h2>Registrering</h2>
         <fieldset>
@@ -184,12 +194,12 @@
 
         <h3>Innan loppet — Öppna data</h3>
         <p>
-          Enklast: tryck <strong>Öppna länk…</strong> och sedan OK (standardlänken
+          Enklast: tryck <strong>Hämta data</strong> och sedan OK (standardlänken
           till klubbens data är redan ifylld) och ange <strong>lösenordet</strong> —
-          då laddas alla kanotister och deras historik. Har du en egen fil kan du
-          istället välja <strong>Öppna data…</strong>, eller klistra in en annan
-          länk (den kommer ihåg ditt val nästa gång). Har du ingen data ännu kan du
-          börja lägga till kanotister direkt.
+          då laddas alla kanotister och deras historik. Vill du öppna en egen fil,
+          välj <strong>Öppna fil…</strong> i menyn <strong>⋯</strong> (där finns
+          även <strong>Rensa data</strong>). Har du ingen data ännu kan du börja
+          lägga till kanotister direkt.
         </p>
 
         <ol class="help-steps">
