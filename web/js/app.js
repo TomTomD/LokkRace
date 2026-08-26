@@ -900,11 +900,12 @@ function renderStats() {
   $("stats-starts-title").textContent = `Flest starter ${year}`;
   $("stats-impr-title").textContent = `Störst förbättring ${year}`;
 
-  const byStarts = [...seasonResults].sort((a, b) => b.count - a.count).slice(0, 10);
+  // All competitors who raced this season (not just a top-N).
+  const byStarts = [...seasonResults].sort((a, b) => b.count - a.count);
   statTable($("stats-most-starts"), ["Namn", "Starter"],
     byStarts.map((r) => [r.name, String(r.count)]), "Inga starter i år");
 
-  const byImpr = [...seasonResults].sort((a, b) => b.improvement - a.improvement).slice(0, 10);
+  const byImpr = [...seasonResults].sort((a, b) => b.improvement - a.improvement);
   statTable($("stats-improvement"), ["Namn", "Förbättring"],
     byImpr.map((r) => [r.name, fmtImprovement(r.improvement)]), "Inga resultat i år");
 
